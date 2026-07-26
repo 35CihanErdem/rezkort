@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Screen } from '../../components/Screen';
 import { useAuth } from '../../store/AuthContext';
 import { colors, spacing } from '../../theme';
 import { AuthStackParamList } from '../../types';
@@ -35,66 +36,73 @@ export function LoginScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={authStyles.screen}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <ScrollView
-        contentContainerStyle={[
-          authStyles.content,
-          { paddingTop: insets.top + spacing.lg },
-        ]}
-        keyboardShouldPersistTaps="handled"
+    <Screen variant="hero">
+      <KeyboardAvoidingView
+        style={authStyles.screen}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <Text style={authStyles.brand}>RezKort</Text>
-        <Text style={authStyles.title}>Giriş yap</Text>
-        <Text style={authStyles.subtitle}>
-          E-posta, telefon veya kullanıcı adı + şifre ile gir.
-        </Text>
-
-        <Text style={authStyles.label}>E-posta / telefon / kullanıcı adı</Text>
-        <TextInput
-          value={identifier}
-          onChangeText={setIdentifier}
-          placeholder="mail@... veya 05xx... veya kullaniciadi"
-          placeholderTextColor={colors.muted}
-          autoCapitalize="none"
-          keyboardType="default"
-          style={authStyles.input}
-        />
-
-        <Text style={authStyles.label}>Şifre</Text>
-        <TextInput
-          value={password}
-          onChangeText={setPassword}
-          placeholder="Şifren"
-          placeholderTextColor={colors.muted}
-          secureTextEntry
-          style={authStyles.input}
-        />
-
-        {error ? <Text style={authStyles.error}>{error}</Text> : null}
-
-        <Pressable
-          onPress={onSubmit}
-          disabled={loading}
-          style={({ pressed }) => [
-            authStyles.cta,
-            (pressed || loading) && { opacity: 0.85 },
+        <ScrollView
+          contentContainerStyle={[
+            authStyles.content,
+            { paddingTop: insets.top + spacing.xl },
           ]}
+          keyboardShouldPersistTaps="handled"
         >
-          <Text style={authStyles.ctaText}>
-            {loading ? 'Giriş yapılıyor...' : 'Giriş yap'}
+          <Text style={authStyles.brand}>RezKort</Text>
+          <Text style={authStyles.heroTag}>
+            İzmir tenis kortlarında yerini ayırt
           </Text>
-        </Pressable>
 
-        <View style={authStyles.linkRow}>
-          <Text style={authStyles.linkMuted}>Hesabın yok mu?</Text>
-          <Pressable onPress={() => navigation.navigate('Register')}>
-            <Text style={authStyles.link}>Kayıt ol</Text>
-          </Pressable>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+          <View style={authStyles.panel}>
+            <Text style={authStyles.title}>Giriş yap</Text>
+            <Text style={authStyles.subtitle}>
+              Telefon (önerilir), e-posta veya kullanıcı adı + şifre.
+            </Text>
+
+            <Text style={authStyles.label}>Telefon / e-posta / kullanıcı adı</Text>
+            <TextInput
+              value={identifier}
+              onChangeText={setIdentifier}
+              placeholder="05xx... veya mail@..."
+              placeholderTextColor={colors.muted}
+              autoCapitalize="none"
+              style={authStyles.input}
+            />
+
+            <Text style={authStyles.label}>Şifre</Text>
+            <TextInput
+              value={password}
+              onChangeText={setPassword}
+              placeholder="Şifren"
+              placeholderTextColor={colors.muted}
+              secureTextEntry
+              style={authStyles.input}
+            />
+
+            {error ? <Text style={authStyles.error}>{error}</Text> : null}
+
+            <Pressable
+              onPress={onSubmit}
+              disabled={loading}
+              style={({ pressed }) => [
+                authStyles.cta,
+                (pressed || loading) && { opacity: 0.88 },
+              ]}
+            >
+              <Text style={authStyles.ctaText}>
+                {loading ? 'Giriş yapılıyor...' : 'Giriş yap'}
+              </Text>
+            </Pressable>
+
+            <View style={authStyles.linkRow}>
+              <Text style={authStyles.linkMuted}>Hesabın yok mu?</Text>
+              <Pressable onPress={() => navigation.navigate('Register')}>
+                <Text style={authStyles.link}>Kayıt ol</Text>
+              </Pressable>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </Screen>
   );
 }

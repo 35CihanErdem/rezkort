@@ -10,7 +10,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBooking } from '../store/BookingContext';
-import { colors, spacing } from '../theme';
+import { Screen } from '../components/Screen';
+import { colors, fonts, radii, spacing } from '../theme';
 
 export function AdminScreen() {
   const insets = useSafeAreaInsets();
@@ -60,6 +61,7 @@ export function AdminScreen() {
   }
 
   return (
+    <Screen>
     <ScrollView
       style={styles.screen}
       contentContainerStyle={[
@@ -67,7 +69,7 @@ export function AdminScreen() {
         { paddingTop: insets.top + spacing.md },
       ]}
     >
-      <Text style={styles.title}>Admin</Text>
+      <Text style={styles.brand}>Admin</Text>
       <Text style={styles.subtitle}>
         Belediye / tesis yönetimi: yeni tenis kortu ekle.
       </Text>
@@ -143,44 +145,48 @@ export function AdminScreen() {
         </View>
       ))}
     </ScrollView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.bg,
+    backgroundColor: 'transparent',
   },
   content: {
     padding: spacing.md,
     paddingBottom: spacing.xl,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: colors.ink,
+  brand: {
+    fontFamily: fonts.display,
+    fontSize: 44,
+    color: colors.courtDeep,
+    letterSpacing: 1,
   },
   subtitle: {
-    marginTop: 4,
+    marginTop: 2,
     marginBottom: spacing.lg,
+    fontFamily: fonts.body,
     color: colors.muted,
     lineHeight: 20,
   },
   label: {
     marginBottom: 6,
     marginTop: spacing.sm,
+    fontFamily: fonts.bodyMedium,
     color: colors.ink,
-    fontWeight: '600',
   },
   input: {
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.line,
-    borderRadius: 12,
+    borderRadius: radii.md,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 16,
     color: colors.ink,
+    fontFamily: fonts.body,
   },
   row: {
     flexDirection: 'row',
@@ -192,36 +198,37 @@ const styles = StyleSheet.create({
   cta: {
     marginTop: spacing.lg,
     backgroundColor: colors.courtDeep,
-    borderRadius: 14,
+    borderRadius: radii.md,
     paddingVertical: 14,
     alignItems: 'center',
   },
   ctaText: {
-    color: '#fff',
-    fontWeight: '800',
+    fontFamily: fonts.bodyBold,
+    color: colors.white,
     fontSize: 16,
   },
   section: {
     marginTop: spacing.xl,
     marginBottom: spacing.sm,
+    fontFamily: fonts.bodyBold,
     fontSize: 16,
-    fontWeight: '700',
     color: colors.ink,
   },
   card: {
     backgroundColor: colors.surface,
-    borderRadius: 12,
+    borderRadius: radii.md,
     padding: spacing.md,
     borderWidth: 1,
     borderColor: colors.line,
     marginBottom: spacing.sm,
   },
   cardTitle: {
-    fontWeight: '700',
+    fontFamily: fonts.bodyBold,
     color: colors.ink,
   },
   cardMeta: {
     marginTop: 2,
+    fontFamily: fonts.body,
     color: colors.muted,
   },
 });

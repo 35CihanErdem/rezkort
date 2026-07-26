@@ -1,16 +1,19 @@
 export const colors = {
-  bg: '#F3F7F4',
-  surface: '#FFFFFF',
-  ink: '#14201A',
-  muted: '#5B6B62',
-  line: '#D7E3DB',
-  court: '#1F7A4D',
-  courtDeep: '#145C39',
-  clay: '#C45C26',
+  bg: '#E8F0EA',
+  bgDeep: '#0F3D28',
+  surface: '#FCFFFD',
+  ink: '#0E1A14',
+  muted: '#5A6F63',
+  line: '#C9D9CF',
+  court: '#1B8F55',
+  courtDeep: '#0F5C38',
+  clay: '#D45E2B',
+  claySoft: '#F7E4DA',
   danger: '#B42318',
-  available: '#E8F6EE',
-  booked: '#F3E8E4',
-  mine: '#DCEEFF',
+  available: '#D9F3E4',
+  booked: '#F7E4DA',
+  mine: '#D7EAF8',
+  white: '#FFFFFF',
 };
 
 export const spacing = {
@@ -19,4 +22,19 @@ export const spacing = {
   md: 16,
   lg: 24,
   xl: 32,
+  xxl: 40,
+};
+
+export const radii = {
+  sm: 10,
+  md: 14,
+  lg: 20,
+  xl: 28,
+};
+
+export const fonts = {
+  display: 'BebasNeue_400Regular',
+  body: 'DMSans_400Regular',
+  bodyMedium: 'DMSans_500Medium',
+  bodyBold: 'DMSans_700Bold',
 };

@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Court } from '../types';
-import { colors, spacing } from '../theme';
+import { colors, fonts, radii, spacing } from '../theme';
 
 type Props = {
   court: Court;
@@ -13,15 +13,16 @@ export function CourtCard({ court, onPress }: Props) {
       onPress={onPress}
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}
     >
-      <View style={styles.badge}>
+      <View style={styles.stripe} />
+      <View style={styles.body}>
         <Text style={styles.badgeText}>{court.district}</Text>
+        <Text style={styles.title}>{court.name}</Text>
+        <Text style={styles.meta}>{court.address}</Text>
+        <Text style={styles.hours}>
+          {String(court.openHour).padStart(2, '0')}:00 –{' '}
+          {String(court.closeHour).padStart(2, '0')}:00
+        </Text>
       </View>
-      <Text style={styles.title}>{court.name}</Text>
-      <Text style={styles.meta}>{court.address}</Text>
-      <Text style={styles.hours}>
-        {String(court.openHour).padStart(2, '0')}:00 –{' '}
-        {String(court.closeHour).padStart(2, '0')}:00
-      </Text>
     </Pressable>
   );
 }
@@ -29,42 +30,47 @@ export function CourtCard({ court, onPress }: Props) {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
-    borderRadius: 16,
-    padding: spacing.md,
+    borderRadius: radii.lg,
     borderWidth: 1,
     borderColor: colors.line,
-    gap: 6,
+    overflow: 'hidden',
+    flexDirection: 'row',
   },
   pressed: {
-    opacity: 0.88,
-    transform: [{ scale: 0.99 }],
+    opacity: 0.92,
+    transform: [{ scale: 0.985 }],
   },
-  badge: {
-    alignSelf: 'flex-start',
-    backgroundColor: colors.available,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
+  stripe: {
+    width: 6,
+    backgroundColor: colors.court,
+  },
+  body: {
+    flex: 1,
+    padding: spacing.md,
+    gap: 4,
   },
   badgeText: {
+    fontFamily: fonts.bodyBold,
     color: colors.courtDeep,
-    fontWeight: '700',
     fontSize: 12,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
   },
   title: {
+    fontFamily: fonts.bodyBold,
     color: colors.ink,
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 17,
   },
   meta: {
+    fontFamily: fonts.body,
     color: colors.muted,
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 13,
+    lineHeight: 18,
   },
   hours: {
     marginTop: 4,
+    fontFamily: fonts.bodyMedium,
     color: colors.court,
-    fontWeight: '600',
     fontSize: 13,
   },
 });

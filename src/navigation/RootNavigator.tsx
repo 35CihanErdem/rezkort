@@ -12,7 +12,7 @@ import { OtpScreen } from '../screens/auth/OtpScreen';
 import { RegisterScreen } from '../screens/auth/RegisterScreen';
 import { SetPasswordScreen } from '../screens/auth/SetPasswordScreen';
 import { useAuth } from '../store/AuthContext';
-import { colors } from '../theme';
+import { colors, fonts } from '../theme';
 import {
   AuthStackParamList,
   MainTabParamList,
@@ -36,9 +36,16 @@ function MainTabs() {
         headerShown: false,
         tabBarActiveTintColor: colors.courtDeep,
         tabBarInactiveTintColor: colors.muted,
+        tabBarLabelStyle: {
+          fontFamily: fonts.bodyMedium,
+          fontSize: 11,
+        },
         tabBarStyle: {
           backgroundColor: colors.surface,
           borderTopColor: colors.line,
+          height: 62,
+          paddingBottom: 8,
+          paddingTop: 6,
         },
       }}
     >
@@ -108,12 +115,13 @@ function AppNavigator() {
       <AppStack.Screen
         name="CourtDetail"
         component={CourtDetailScreen}
-        options={{
-          title: 'Rezervasyon',
-          headerTintColor: colors.courtDeep,
-          headerStyle: { backgroundColor: colors.bg },
-          headerShadowVisible: false,
-        }}
+          options={{
+            title: 'Rezervasyon',
+            headerTintColor: colors.courtDeep,
+            headerTitleStyle: { fontFamily: fonts.bodyBold },
+            headerStyle: { backgroundColor: colors.bg },
+            headerShadowVisible: false,
+          }}
       />
     </AppStack.Navigator>
   );

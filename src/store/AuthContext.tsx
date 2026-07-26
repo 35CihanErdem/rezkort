@@ -145,13 +145,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (users.some((u) => u.phone === phone)) {
         return {
           ok: false as const,
-          reason: 'Bu telefon zaten kayıtlı. Giriş yap.',
+          reason:
+            'Bu telefon zaten bir hesaba bağlı. Farklı e-posta ile tekrar kayıt olunamaz — giriş yap.',
         };
       }
       if (users.some((u) => u.email === email)) {
         return {
           ok: false as const,
-          reason: 'Bu e-posta zaten kayıtlı. Giriş yap.',
+          reason:
+            'Bu e-posta zaten kayıtlı. Telefonun başka bir hesapta olabilir; giriş yap.',
         };
       }
 
@@ -222,10 +224,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (code.trim() !== pending.otpCode) {
         return { ok: false, reason: 'Doğrulama kodu hatalı.' };
       }
+      // E-posta doğrulanırken telefon hâlâ boşta mı? (ana hat = telefon)
+      if (users.some((u) => u.phone === pending.phone)) {
+        return {
+          ok: false,
+          reason:
+            'Bu telefon az önce başka hesaba bağlandı. Farklı numarayla dene veya giriş yap.',
+        };
+      }
+      if (users.some((u) => u.email === pending.email)) {
+        return {
+          ok: false,
+          reason: 'Bu e-posta az önce kayıt oldu. Giriş yap.',
+        };
+      }
       setPending({ ...pending, emailVerified: true });
       return { ok: true };
     },
-    [pending],
+    [pending, users],
   );
 
   const completeRegister = useCallback(
@@ -261,7 +277,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (users.some((u) => u.phone === pending.phone)) {
         return {
           ok: false as const,
-          reason: 'Bu telefon zaten kayıtlı.',
+          reason:
+            'Bu telefon zaten kayıtlı. Ana kimlik telefon — farklı Gmail ile ikinci hesap açılamaz.',
         };
       }
       if (users.some((u) => u.email === pending.email)) {
@@ -273,6 +290,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const id = createId('user');
       const passwordHash = await hashPassword(password, id);
+      // E-posta doğrulandı → telefon + e-posta kalıcı bağlanır
       const nextUser: User = {
         id,
         firstName: pending.firstName,

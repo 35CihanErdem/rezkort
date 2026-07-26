@@ -10,7 +10,8 @@ import {
 } from 'react-native';
 import { displayName, useAuth } from '../store/AuthContext';
 import { useBooking } from '../store/BookingContext';
-import { colors, spacing } from '../theme';
+import { Screen } from '../components/Screen';
+import { colors, fonts, radii, spacing } from '../theme';
 import { RootStackParamList } from '../types';
 import {
   formatDateLabel,
@@ -86,6 +87,7 @@ export function CourtDetailScreen() {
   }
 
   return (
+    <Screen>
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
       <Text style={styles.district}>{selectedCourt.district}</Text>
       <Text style={styles.title}>{selectedCourt.name}</Text>
@@ -191,13 +193,14 @@ export function CourtDetailScreen() {
         </Text>
       </Pressable>
     </ScrollView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.bg,
+    backgroundColor: 'transparent',
   },
   content: {
     padding: spacing.md,
@@ -206,45 +209,48 @@ const styles = StyleSheet.create({
   missing: {
     marginTop: spacing.xl,
     textAlign: 'center',
+    fontFamily: fonts.body,
     color: colors.muted,
   },
   district: {
+    fontFamily: fonts.bodyBold,
     color: colors.court,
-    fontWeight: '700',
-    fontSize: 13,
+    fontSize: 12,
     textTransform: 'uppercase',
-    letterSpacing: 0.6,
+    letterSpacing: 0.8,
   },
   title: {
     marginTop: 4,
+    fontFamily: fonts.bodyBold,
     fontSize: 24,
-    fontWeight: '800',
     color: colors.ink,
   },
   address: {
     marginTop: 6,
+    fontFamily: fonts.body,
     color: colors.muted,
     lineHeight: 20,
   },
   warn: {
     marginTop: spacing.md,
-    backgroundColor: colors.booked,
-    borderRadius: 12,
+    backgroundColor: colors.claySoft,
+    borderRadius: radii.md,
     padding: spacing.md,
   },
   warnText: {
+    fontFamily: fonts.bodyMedium,
     color: colors.clay,
     lineHeight: 20,
-    fontWeight: '600',
   },
   section: {
     marginTop: spacing.lg,
     marginBottom: spacing.sm,
+    fontFamily: fonts.bodyBold,
     fontSize: 16,
-    fontWeight: '700',
     color: colors.ink,
   },
   legend: {
+    fontFamily: fonts.body,
     color: colors.muted,
     marginBottom: spacing.sm,
     fontSize: 13,
@@ -256,7 +262,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.line,
-    borderRadius: 12,
+    borderRadius: radii.sm,
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
@@ -265,11 +271,11 @@ const styles = StyleSheet.create({
     borderColor: colors.courtDeep,
   },
   dayText: {
+    fontFamily: fonts.bodyMedium,
     color: colors.ink,
-    fontWeight: '600',
   },
   dayTextActive: {
-    color: '#fff',
+    color: colors.white,
   },
   grid: {
     flexDirection: 'row',
@@ -279,7 +285,7 @@ const styles = StyleSheet.create({
   slot: {
     width: '48%',
     backgroundColor: colors.available,
-    borderRadius: 12,
+    borderRadius: radii.md,
     padding: 12,
     borderWidth: 1,
     borderColor: '#B7E0C8',
@@ -293,12 +299,13 @@ const styles = StyleSheet.create({
     borderColor: '#7EB6E8',
   },
   slotHour: {
-    fontWeight: '700',
+    fontFamily: fonts.bodyBold,
     color: colors.courtDeep,
     fontSize: 14,
   },
   slotMeta: {
     marginTop: 4,
+    fontFamily: fonts.body,
     color: colors.muted,
     fontSize: 12,
   },
@@ -309,13 +316,14 @@ const styles = StyleSheet.create({
     color: '#1A4F7A',
   },
   accountLine: {
+    fontFamily: fonts.body,
     color: colors.muted,
     marginBottom: spacing.sm,
   },
   cta: {
     marginTop: spacing.sm,
-    backgroundColor: colors.court,
-    borderRadius: 14,
+    backgroundColor: colors.courtDeep,
+    borderRadius: radii.md,
     paddingVertical: 14,
     alignItems: 'center',
   },
@@ -323,8 +331,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.muted,
   },
   ctaText: {
-    color: '#fff',
-    fontWeight: '800',
+    fontFamily: fonts.bodyBold,
+    color: colors.white,
     fontSize: 16,
   },
 });

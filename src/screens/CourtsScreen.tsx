@@ -1,3 +1,5 @@
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useMemo, useState } from 'react';
 import {
   FlatList,
@@ -9,10 +11,9 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CourtCard } from '../components/CourtCard';
+import { Screen } from '../components/Screen';
 import { useBooking } from '../store/BookingContext';
-import { colors, spacing } from '../theme';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useNavigation } from '@react-navigation/native';
+import { colors, fonts, radii, spacing } from '../theme';
 import { RootStackParamList } from '../types';
 
 export function CourtsScreen() {
@@ -42,83 +43,90 @@ export function CourtsScreen() {
   }, [courts, district, query]);
 
   return (
-    <View style={[styles.screen, { paddingTop: insets.top + spacing.md }]}>
-      <Text style={styles.brand}>RezKort</Text>
-      <Text style={styles.subtitle}>
-        İzmir tenis kortlarında boş saati gör, hemen rezerve et.
-      </Text>
+    <Screen>
+      <View style={[styles.screen, { paddingTop: insets.top + spacing.md }]}>
+        <Text style={styles.brand}>RezKort</Text>
+        <Text style={styles.subtitle}>
+          Boş saati gör, tek dokunuşla rezerve et.
+        </Text>
 
-      <TextInput
-        value={query}
-        onChangeText={setQuery}
-        placeholder="Kort veya semt ara..."
-        placeholderTextColor={colors.muted}
-        style={styles.search}
-      />
+        <TextInput
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Kort veya semt ara..."
+          placeholderTextColor={colors.muted}
+          style={styles.search}
+        />
 
-      <View style={styles.filters}>
-        <Pressable
-          onPress={() => setDistrict(null)}
-          style={[styles.chip, !district && styles.chipActive]}
-        >
-          <Text style={[styles.chipText, !district && styles.chipTextActive]}>
-            Tümü
-          </Text>
-        </Pressable>
-        {districts.map((d) => (
+        <View style={styles.filters}>
           <Pressable
-            key={d}
-            onPress={() => setDistrict(d)}
-            style={[styles.chip, district === d && styles.chipActive]}
+            onPress={() => setDistrict(null)}
+            style={[styles.chip, !district && styles.chipActive]}
           >
             <Text
-              style={[
-                styles.chipText,
-                district === d && styles.chipTextActive,
-              ]}
+              style={[styles.chipText, !district && styles.chipTextActive]}
             >
-              {d}
+              Tümü
             </Text>
           </Pressable>
-        ))}
-      </View>
+          {districts.map((d) => (
+            <Pressable
+              key={d}
+              onPress={() => setDistrict(d)}
+              style={[styles.chip, district === d && styles.chipActive]}
+            >
+              <Text
+                style={[
+                  styles.chipText,
+                  district === d && styles.chipTextActive,
+                ]}
+              >
+                {d}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
 
-      <FlatList
-        data={filtered}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
-        ItemSeparatorComponent={() => <View style={{ height: spacing.sm }} />}
-        ListEmptyComponent={
-          <Text style={styles.empty}>Bu filtreye uygun kort yok.</Text>
-        }
-        renderItem={({ item }) => (
-          <CourtCard
-            court={item}
-            onPress={() =>
-              navigation.navigate('CourtDetail', { courtId: item.id })
-            }
-          />
-        )}
-      />
-    </View>
+        <FlatList
+          data={filtered}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.list}
+          ItemSeparatorComponent={() => (
+            <View style={{ height: spacing.sm }} />
+          )}
+          ListEmptyComponent={
+            <Text style={styles.empty}>Bu filtreye uygun kort yok.</Text>
+          }
+          renderItem={({ item }) => (
+            <CourtCard
+              court={item}
+              onPress={() =>
+                navigation.navigate('CourtDetail', { courtId: item.id })
+              }
+            />
+          )}
+        />
+      </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.bg,
     paddingHorizontal: spacing.md,
   },
   brand: {
-    fontSize: 28,
-    fontWeight: '800',
+    fontFamily: fonts.display,
+    fontSize: 48,
     color: colors.courtDeep,
-    letterSpacing: -0.5,
+    letterSpacing: 1,
+    lineHeight: 50,
   },
   subtitle: {
-    marginTop: 4,
+    marginTop: 2,
     marginBottom: spacing.md,
+    fontFamily: fonts.body,
     color: colors.muted,
     fontSize: 15,
     lineHeight: 22,
@@ -127,11 +135,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.line,
-    borderRadius: 12,
+    borderRadius: radii.md,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 16,
     color: colors.ink,
+    fontFamily: fonts.body,
     marginBottom: spacing.sm,
   },
   filters: {
@@ -141,7 +150,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   chip: {
-    borderRadius: 999,
+    borderRadius: radii.sm,
     borderWidth: 1,
     borderColor: colors.line,
     backgroundColor: colors.surface,
@@ -149,22 +158,23 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   chipActive: {
-    backgroundColor: colors.court,
-    borderColor: colors.court,
+    backgroundColor: colors.courtDeep,
+    borderColor: colors.courtDeep,
   },
   chipText: {
+    fontFamily: fonts.bodyMedium,
     color: colors.muted,
-    fontWeight: '600',
     fontSize: 13,
   },
   chipTextActive: {
-    color: '#fff',
+    color: colors.white,
   },
   list: {
     paddingBottom: spacing.xl,
   },
   empty: {
     textAlign: 'center',
+    fontFamily: fonts.body,
     color: colors.muted,
     marginTop: spacing.xl,
   },

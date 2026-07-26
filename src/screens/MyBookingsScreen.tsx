@@ -7,9 +7,10 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Screen } from '../components/Screen';
 import { useAuth } from '../store/AuthContext';
 import { useBooking } from '../store/BookingContext';
-import { colors, spacing } from '../theme';
+import { colors, fonts, radii, spacing } from '../theme';
 import { formatDateLabel, formatSlot } from '../utils/date';
 
 export function MyBookingsScreen() {
@@ -20,73 +21,77 @@ export function MyBookingsScreen() {
   const mine = bookings.filter((b) => b.userId === user?.id);
 
   return (
-    <View style={[styles.screen, { paddingTop: insets.top + spacing.md }]}>
-      <Text style={styles.title}>Randevularım</Text>
-      <Text style={styles.subtitle}>
-        Hesabına bağlı rezervasyonlar. Aynı anda yalnızca 1 aktif randevu
-        alabilirsin.
-      </Text>
+    <Screen>
+      <View style={[styles.screen, { paddingTop: insets.top + spacing.md }]}>
+        <Text style={styles.brand}>Randevular</Text>
+        <Text style={styles.subtitle}>
+          Aynı anda yalnızca 1 aktif randevu alabilirsin.
+        </Text>
 
-      <FlatList
-        data={mine}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
-        ItemSeparatorComponent={() => <View style={{ height: spacing.sm }} />}
-        ListEmptyComponent={
-          <Text style={styles.empty}>Henüz rezervasyonun yok.</Text>
-        }
-        renderItem={({ item }) => {
-          const court = courts.find((c) => c.id === item.courtId);
-          return (
-            <View style={styles.card}>
-              <Text style={styles.player}>{item.playerName}</Text>
-              <Text style={styles.court}>
-                {court?.name ?? 'Silinmiş kort'}
-              </Text>
-              <Text style={styles.meta}>
-                {formatDateLabel(item.date)} · {formatSlot(item.hour)}
-              </Text>
-              <Pressable
-                onPress={() =>
-                  Alert.alert(
-                    'İptal et',
-                    'Bu rezervasyonu iptal etmek istiyor musun?',
-                    [
-                      { text: 'Vazgeç', style: 'cancel' },
-                      {
-                        text: 'İptal et',
-                        style: 'destructive',
-                        onPress: () => cancelBooking(item.id),
-                      },
-                    ],
-                  )
-                }
-                style={styles.cancel}
-              >
-                <Text style={styles.cancelText}>İptal et</Text>
-              </Pressable>
-            </View>
-          );
-        }}
-      />
-    </View>
+        <FlatList
+          data={mine}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.list}
+          ItemSeparatorComponent={() => (
+            <View style={{ height: spacing.sm }} />
+          )}
+          ListEmptyComponent={
+            <Text style={styles.empty}>Henüz rezervasyonun yok.</Text>
+          }
+          renderItem={({ item }) => {
+            const court = courts.find((c) => c.id === item.courtId);
+            return (
+              <View style={styles.card}>
+                <Text style={styles.player}>{item.playerName}</Text>
+                <Text style={styles.court}>
+                  {court?.name ?? 'Silinmiş kort'}
+                </Text>
+                <Text style={styles.meta}>
+                  {formatDateLabel(item.date)} · {formatSlot(item.hour)}
+                </Text>
+                <Pressable
+                  onPress={() =>
+                    Alert.alert(
+                      'İptal et',
+                      'Bu rezervasyonu iptal etmek istiyor musun?',
+                      [
+                        { text: 'Vazgeç', style: 'cancel' },
+                        {
+                          text: 'İptal et',
+                          style: 'destructive',
+                          onPress: () => cancelBooking(item.id),
+                        },
+                      ],
+                    )
+                  }
+                  style={styles.cancel}
+                >
+                  <Text style={styles.cancelText}>İptal et</Text>
+                </Pressable>
+              </View>
+            );
+          }}
+        />
+      </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.bg,
     paddingHorizontal: spacing.md,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: colors.ink,
+  brand: {
+    fontFamily: fonts.display,
+    fontSize: 44,
+    color: colors.courtDeep,
+    letterSpacing: 1,
   },
   subtitle: {
-    marginTop: 4,
+    marginTop: 2,
     marginBottom: spacing.md,
+    fontFamily: fonts.body,
     color: colors.muted,
     lineHeight: 20,
   },
@@ -95,27 +100,29 @@ const styles = StyleSheet.create({
   },
   empty: {
     textAlign: 'center',
+    fontFamily: fonts.body,
     color: colors.muted,
     marginTop: spacing.xl,
   },
   card: {
     backgroundColor: colors.surface,
-    borderRadius: 16,
+    borderRadius: radii.lg,
     padding: spacing.md,
     borderWidth: 1,
     borderColor: colors.line,
     gap: 4,
   },
   player: {
+    fontFamily: fonts.bodyBold,
     fontSize: 17,
-    fontWeight: '700',
     color: colors.ink,
   },
   court: {
+    fontFamily: fonts.bodyMedium,
     color: colors.courtDeep,
-    fontWeight: '600',
   },
   meta: {
+    fontFamily: fonts.body,
     color: colors.muted,
   },
   cancel: {
@@ -123,11 +130,11 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 10,
-    backgroundColor: colors.booked,
+    borderRadius: radii.sm,
+    backgroundColor: colors.claySoft,
   },
   cancelText: {
+    fontFamily: fonts.bodyBold,
     color: colors.clay,
-    fontWeight: '700',
   },
 });
