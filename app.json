@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "RezKort",
+    "slug": "rezkort",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.rezkort.app"
+    },
+    "android": {
+      "package": "com.rezkort.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#145C39",
+        "foregroundImage": "./assets/android-icon-foreground.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}
