@@ -1,5 +1,5 @@
 import { RouteProp, useRoute } from '@react-navigation/native';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Pressable,
@@ -13,6 +13,7 @@ import { displayName, useAuth } from '../context/AuthContext';
 import { useBooking } from '../store/BookingContext';
 import { colors, fonts, radii, spacing } from '../theme';
 import { RootStackParamList } from '../types';
+import { isSlotJoinable } from '../utils/booking';
 import { formatDateLabel, formatSlot, nextDays } from '../utils/date';
 
 export function CourtDetailScreen() {
@@ -24,6 +25,7 @@ export function CourtDetailScreen() {
     cancelBooking,
     getBookingForSlot,
     getActiveBookingForPhone,
+    getLateJoinMinutesForCourt,
   } = useBooking();
   const court = courts.find((c) => c.id === route.params.courtId);
 
@@ -32,6 +34,12 @@ export function CourtDetailScreen() {
   const [selectedHour, setSelectedHour] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 30_000);
+    return () => clearInterval(id);
+  }, []);
 
   if (!court) {
     return (
@@ -61,6 +69,7 @@ export function CourtDetailScreen() {
     { length: selectedCourt.closeHour - selectedCourt.openHour },
     (_, i) => selectedCourt.openHour + i,
   );
+  const joinMinutes = getLateJoinMinutesForCourt(selectedCourt.id);
 
   async function onBook() {
     if (selectedHour == null) {
@@ -177,7 +186,9 @@ export function CourtDetailScreen() {
 
         <Text style={styles.section}>Saatler</Text>
         <Text style={styles.legend}>
-          Yeşil boş · Turuncu dolu · Mavi seçili
+          Yeşil boş · Turuncu dolu · Gri süre doldu · Mavi seçili
+          {'\n'}
+          Geç giriş toleransı: {joinMinutes} dk (bitiş uzamaz)
         </Text>
         <View style={styles.grid}>
           {hours.map((hour) => {
@@ -185,16 +196,25 @@ export function CourtDetailScreen() {
             const taken = Boolean(booking);
             const mine =
               booking?.userId === currentUser.id && booking?.status === 'active';
+            const joinable = isSlotJoinable(
+              date,
+              hour,
+              hour + 1,
+              joinMinutes,
+              now,
+            );
+            const expired = !taken && !joinable;
             const selected = selectedHour === hour;
 
             return (
               <Pressable
                 key={hour}
-                disabled={taken || Boolean(activeBooking)}
+                disabled={taken || expired || Boolean(activeBooking)}
                 onPress={() => setSelectedHour(hour)}
                 style={[
                   styles.slot,
                   taken && styles.slotTaken,
+                  expired && styles.slotExpired,
                   mine && styles.slotMine,
                   selected && styles.slotSelected,
                 ]}
@@ -203,6 +223,7 @@ export function CourtDetailScreen() {
                   style={[
                     styles.slotHour,
                     taken && styles.slotHourTaken,
+                    expired && styles.slotHourExpired,
                     mine && styles.slotHourMine,
                     selected && styles.slotHourSelected,
                   ]}
@@ -213,11 +234,18 @@ export function CourtDetailScreen() {
                   style={[
                     styles.slotMeta,
                     taken && styles.slotHourTaken,
+                    expired && styles.slotHourExpired,
                     mine && styles.slotHourMine,
                     selected && styles.slotHourSelected,
                   ]}
                 >
-                  {mine ? 'Senin' : taken ? 'Dolu' : 'Boş'}
+                  {mine
+                    ? 'Senin'
+                    : taken
+                      ? 'Dolu'
+                      : expired
+                        ? 'Süre doldu'
+                        : 'Boş'}
                 </Text>
               </Pressable>
             );
@@ -360,6 +388,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.booked,
     borderColor: '#E5C4B5',
   },
+  slotExpired: {
+    backgroundColor: '#E8ECE9',
+    borderColor: colors.line,
+    opacity: 0.75,
+  },
   slotMine: {
     backgroundColor: colors.mine,
     borderColor: '#7EB6E8',
@@ -381,6 +414,9 @@ const styles = StyleSheet.create({
   },
   slotHourTaken: {
     color: colors.clay,
+  },
+  slotHourExpired: {
+    color: colors.muted,
   },
   slotHourMine: {
     color: '#1A4F7A',

@@ -325,3 +325,103 @@ export async function updateUserRole(
 
   return { ok: true, message: 'Rol güncellendi.' };
 }
+
+type RulesRow = {
+  id: string;
+  municipality_id: string;
+  max_active_reservations: number;
+  max_days_ahead: number;
+  cancel_before_minutes: number;
+  no_show_limit: number;
+  ban_days: number;
+  late_join_minutes: number | null;
+  updated_at: string;
+  municipalities?: { name: string } | { name: string }[] | null;
+};
+
+function mapRules(row: RulesRow): import('../types/admin').ReservationRules {
+  const muni = Array.isArray(row.municipalities)
+    ? row.municipalities[0]
+    : row.municipalities;
+  return {
+    id: row.id,
+    municipalityId: row.municipality_id,
+    municipalityName: muni?.name,
+    maxActiveReservations: row.max_active_reservations,
+    maxDaysAhead: row.max_days_ahead,
+    cancelBeforeMinutes: row.cancel_before_minutes,
+    noShowLimit: row.no_show_limit,
+    banDays: row.ban_days,
+    lateJoinMinutes: row.late_join_minutes ?? 30,
+    updatedAt: row.updated_at,
+  };
+}
+
+export async function listReservationRules(): Promise<
+  import('../types/admin').ReservationRules[]
+> {
+  const { data, error } = await supabase
+    .from('reservation_rules')
+    .select(
+      'id,municipality_id,max_active_reservations,max_days_ahead,cancel_before_minutes,no_show_limit,ban_days,late_join_minutes,updated_at,municipalities(name)',
+    )
+    .order('updated_at', { ascending: false });
+
+  if (error) throw error;
+  return ((data as unknown as RulesRow[] | null) ?? []).map(mapRules);
+}
+
+export async function updateReservationRules(
+  municipalityId: string,
+  patch: {
+    lateJoinMinutes?: number;
+    cancelBeforeMinutes?: number;
+    maxDaysAhead?: number;
+    maxActiveReservations?: number;
+  },
+): Promise<AdminActionResult> {
+  const update: Record<string, number> = {};
+  if (patch.lateJoinMinutes !== undefined) {
+    update.late_join_minutes = Math.max(0, Math.floor(patch.lateJoinMinutes));
+  }
+  if (patch.cancelBeforeMinutes !== undefined) {
+    update.cancel_before_minutes = Math.max(
+      0,
+      Math.floor(patch.cancelBeforeMinutes),
+    );
+  }
+  if (patch.maxDaysAhead !== undefined) {
+    update.max_days_ahead = Math.max(1, Math.floor(patch.maxDaysAhead));
+  }
+  if (patch.maxActiveReservations !== undefined) {
+    update.max_active_reservations = Math.max(
+      1,
+      Math.floor(patch.maxActiveReservations),
+    );
+  }
+
+  if (Object.keys(update).length === 0) {
+    return { ok: false, reason: 'Güncellenecek alan yok.' };
+  }
+
+  const { error } = await supabase
+    .from('reservation_rules')
+    .update(update)
+    .eq('municipality_id', municipalityId);
+
+  if (error) {
+    if (error.message.toLowerCase().includes('row-level security')) {
+      return { ok: false, reason: 'Yetkin yok.' };
+    }
+    if (error.message.toLowerCase().includes('late_join_minutes')) {
+      return {
+        ok: false,
+        reason:
+          'Veritabanında late_join_minutes yok. 0012_late_join_tolerance.sql migration’ını çalıştır.',
+      };
+    }
+    return { ok: false, reason: error.message };
+  }
+
+  return { ok: true, message: 'Kurallar kaydedildi.' };
+}

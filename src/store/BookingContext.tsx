@@ -12,11 +12,14 @@ import { Booking, Court } from '../types';
 import { isBookingActive } from '../utils/booking';
 import { toDateKey } from '../utils/date';
 
+const DEFAULT_LATE_JOIN_MINUTES = 30;
+
 type BookingContextValue = {
   ready: boolean;
   courts: Court[];
   bookings: Booking[];
   refreshCourts: () => Promise<void>;
+  getLateJoinMinutesForCourt: (courtId: string) => number;
   addCourt: (input: {
     name: string;
     district: string;
@@ -51,6 +54,9 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
   const [courts, setCourts] = useState<Court[]>([]);
   const [slotReservations, setSlotReservations] = useState<Booking[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [joinRulesByMunicipality, setJoinRulesByMunicipality] = useState<
+    Record<string, number>
+  >({});
 
   const mapCourt = useCallback((row: any): Court => {
     const facility = row.facilities ?? {};
@@ -58,6 +64,7 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
     return {
       id: row.id,
       facilityId: row.facility_id,
+      municipalityId: facility.municipality_id ?? municipality.id,
       name: row.name,
       district: facility.district ?? '',
       address: facility.address ?? '',
@@ -96,31 +103,46 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const loadCoreData = useCallback(async () => {
-    const [{ data: courtRows, error: courtError }, { data: slotRows, error: slotError }] =
-      await Promise.all([
-        supabase
-          .from('courts')
-          .select(
-            'id,facility_id,name,surface_type,has_lights,status,open_hour,close_hour,facilities!inner(district,address,municipalities!inner(name))',
-          )
-          .eq('status', 'active')
-          .order('name', { ascending: true }),
-        supabase
-          .from('reservations')
-          .select(
-            'id,court_id,user_id,phone,date,start_hour,end_hour,status,reservation_source,checked_in,notes,cancelled_at,completed_at,created_at,updated_at,profiles(first_name,last_name)',
-          )
-          .in('status', ['active', 'cancelled_late'])
-          .gte('date', toDateKey(new Date()))
-          .order('date', { ascending: true }),
-      ]);
+    const [
+      { data: courtRows, error: courtError },
+      { data: slotRows, error: slotError },
+      { data: ruleRows, error: ruleError },
+    ] = await Promise.all([
+      supabase
+        .from('courts')
+        .select(
+          'id,facility_id,name,surface_type,has_lights,status,open_hour,close_hour,facilities!inner(district,address,municipality_id,municipalities!inner(id,name))',
+        )
+        .eq('status', 'active')
+        .order('name', { ascending: true }),
+      supabase
+        .from('reservations')
+        .select(
+          'id,court_id,user_id,phone,date,start_hour,end_hour,status,reservation_source,checked_in,notes,cancelled_at,completed_at,created_at,updated_at,profiles(first_name,last_name)',
+        )
+        .in('status', ['active', 'cancelled_late'])
+        .gte('date', toDateKey(new Date()))
+        .order('date', { ascending: true }),
+      supabase
+        .from('reservation_rules')
+        .select('municipality_id,late_join_minutes'),
+    ]);
 
     if (courtError) throw courtError;
     setCourts((courtRows ?? []).map(mapCourt));
 
-    // RLS nedeniyle bazı profiller gizli olabilir, yine de slot doluluğu için kayıt tutulur.
-    if (!slotError) {
-      setSlotReservations((slotRows ?? []).map(mapBooking));
+    if (slotError) throw slotError;
+    setSlotReservations((slotRows ?? []).map(mapBooking));
+
+    if (!ruleError && ruleRows) {
+      const next: Record<string, number> = {};
+      for (const row of ruleRows as {
+        municipality_id: string;
+        late_join_minutes: number | null;
+      }[]) {
+        next[row.municipality_id] = row.late_join_minutes ?? DEFAULT_LATE_JOIN_MINUTES;
+      }
+      setJoinRulesByMunicipality(next);
     }
   }, [mapBooking, mapCourt]);
 
@@ -236,7 +258,9 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
             'Aktif rezervasyon limitine ulaştın.',
           SLOT_ALREADY_BOOKED: 'Bu saat dolu.',
           TOO_FAR_IN_FUTURE: 'Bu tarih için erken rezervasyon yapılamaz.',
-          PAST_SLOT_NOT_ALLOWED: 'Geçmiş saate rezervasyon yapılamaz.',
+          PAST_SLOT_NOT_ALLOWED: 'Bu saatin süresi doldu.',
+          LATE_JOIN_WINDOW_CLOSED:
+            'Geç giriş toleransı doldu. Bu saate artık rezervasyon alınamaz.',
           OUTSIDE_WORKING_HOURS: 'Kort çalışma saatleri dışında.',
         };
         return {
@@ -275,12 +299,25 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
     [loadCoreData, loadUserBookings],
   );
 
+  const getLateJoinMinutesForCourt = useCallback(
+    (courtId: string): number => {
+      const court = courts.find((c) => c.id === courtId);
+      if (!court?.municipalityId) return DEFAULT_LATE_JOIN_MINUTES;
+      return (
+        joinRulesByMunicipality[court.municipalityId] ??
+        DEFAULT_LATE_JOIN_MINUTES
+      );
+    },
+    [courts, joinRulesByMunicipality],
+  );
+
   const value = useMemo(
     () => ({
       ready,
       courts,
       bookings,
       refreshCourts: loadCoreData,
+      getLateJoinMinutesForCourt,
       addCourt,
       bookSlot,
       cancelBooking,
@@ -292,6 +329,7 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
       courts,
       bookings,
       loadCoreData,
+      getLateJoinMinutesForCourt,
       addCourt,
       bookSlot,
       cancelBooking,

@@ -43,3 +43,17 @@ export type AdminUser = {
   isActive: boolean;
   createdAt: string;
 };
+
+export type ReservationRules = {
+  id: string;
+  municipalityId: string;
+  municipalityName?: string;
+  maxActiveReservations: number;
+  maxDaysAhead: number;
+  cancelBeforeMinutes: number;
+  noShowLimit: number;
+  banDays: number;
+  /** Slot başladıktan sonra kaç dk geç rezervasyon / giriş (tek tolerans) */
+  lateJoinMinutes: number;
+  updatedAt: string;
+};

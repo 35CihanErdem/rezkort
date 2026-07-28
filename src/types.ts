@@ -1,6 +1,7 @@
 export type Court = {
   id: string;
   facilityId?: string;
+  municipalityId?: string;
   name: string;
   district: string;
   address: string;

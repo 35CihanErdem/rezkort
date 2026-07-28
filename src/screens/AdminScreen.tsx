@@ -14,12 +14,18 @@ import { useAuth } from '../context/AuthContext';
 import * as adminService from '../services/admin.service';
 import { useBooking } from '../store/BookingContext';
 import { colors, fonts, radii, spacing } from '../theme';
-import type { AdminCourt, AdminUser, Facility, Municipality } from '../types/admin';
+import type {
+  AdminCourt,
+  AdminUser,
+  Facility,
+  Municipality,
+  ReservationRules,
+} from '../types/admin';
 import type { ProfileRole } from '../types/profile';
 import { canAccessAdmin, isGlobalAdmin, roleLabel } from '../utils/roles';
 import { formatPhoneDisplay } from '../utils/phone';
 
-type Tab = 'facilities' | 'courts' | 'users';
+type Tab = 'facilities' | 'courts' | 'users' | 'rules';
 
 const ROLE_CYCLE: ProfileRole[] = [
   'citizen',
@@ -37,6 +43,7 @@ export function AdminScreen() {
   const [facilities, setFacilities] = useState<Facility[]>([]);
   const [adminCourts, setAdminCourts] = useState<AdminCourt[]>([]);
   const [users, setUsers] = useState<AdminUser[]>([]);
+  const [rules, setRules] = useState<ReservationRules[]>([]);
   const [municipalityId, setMunicipalityId] = useState<string | null>(null);
   const [facilityId, setFacilityId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -51,8 +58,11 @@ export function AdminScreen() {
   const [closeHour, setCloseHour] = useState('22');
   const [hasLights, setHasLights] = useState(false);
 
+  const [lateJoinInput, setLateJoinInput] = useState('30');
+
   const allowed = canAccessAdmin(profile);
   const canManageUsers = profile?.role === 'super_admin';
+  const canEditRules = isGlobalAdmin(profile) || profile?.role === 'super_admin';
 
   const filteredFacilities = useMemo(
     () =>
@@ -77,18 +87,28 @@ export function AdminScreen() {
         adminService.listMunicipalities(),
         adminService.listFacilities(),
         adminService.listAdminCourts(),
+        adminService.listReservationRules(),
       ];
       if (canManageUsers) {
         tasks.push(adminService.listUsers());
       }
-      const [m, f, c, u] = await Promise.all(tasks);
+      const [m, f, c, r, u] = await Promise.all(tasks);
       setMunicipalities(m as Municipality[]);
       setFacilities(f as Facility[]);
       setAdminCourts(c as AdminCourt[]);
+      const nextRules = (r as ReservationRules[]) ?? [];
+      setRules(nextRules);
       if (canManageUsers) {
         setUsers((u as AdminUser[]) ?? []);
       }
-      setMunicipalityId((prev) => prev ?? (m as Municipality[])[0]?.id ?? null);
+      setMunicipalityId((prev) => {
+        const next = prev ?? (m as Municipality[])[0]?.id ?? null;
+        const rule = nextRules.find((x) => x.municipalityId === next);
+        if (rule) {
+          setLateJoinInput(String(rule.lateJoinMinutes));
+        }
+        return next;
+      });
       setFacilityId((prev) => prev ?? (f as Facility[])[0]?.id ?? null);
     } catch (e) {
       Alert.alert(
@@ -193,6 +213,38 @@ export function AdminScreen() {
     await load();
   }
 
+  async function onSaveRules() {
+    if (!municipalityId) {
+      Alert.alert('Belediye seç', 'Önce belediye seç.');
+      return;
+    }
+    setSaving(true);
+    try {
+      const result = await adminService.updateReservationRules(municipalityId, {
+        lateJoinMinutes: Number(lateJoinInput),
+      });
+      if (!result.ok) {
+        Alert.alert('Kaydedilemedi', result.reason);
+        return;
+      }
+      await load();
+      await refreshCourts();
+      Alert.alert('Kaydedildi', `Geç giriş toleransı: ${lateJoinInput} dk`);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function selectMunicipality(id: string) {
+    setMunicipalityId(id);
+    const first = facilities.find((f) => f.municipalityId === id);
+    setFacilityId(first?.id ?? null);
+    const rule = rules.find((x) => x.municipalityId === id);
+    if (rule) {
+      setLateJoinInput(String(rule.lateJoinMinutes));
+    }
+  }
+
   if (!allowed) {
     return (
       <Screen>
@@ -243,6 +295,16 @@ export function AdminScreen() {
               Tesisler
             </Text>
           </Pressable>
+          <Pressable
+            onPress={() => setTab('rules')}
+            style={[styles.tab, tab === 'rules' && styles.tabActive]}
+          >
+            <Text
+              style={[styles.tabText, tab === 'rules' && styles.tabTextActive]}
+            >
+              Kurallar
+            </Text>
+          </Pressable>
           {canManageUsers ? (
             <Pressable
               onPress={() => setTab('users')}
@@ -264,6 +326,69 @@ export function AdminScreen() {
           <View style={styles.loaderWrap}>
             <TennisLoader label="Admin yükleniyor..." />
           </View>
+        ) : tab === 'rules' ? (
+          <>
+            <Text style={styles.section}>Belediye</Text>
+            <View style={styles.chipRow}>
+              {municipalities.map((m) => (
+                <Pressable
+                  key={m.id}
+                  onPress={() => selectMunicipality(m.id)}
+                  style={[
+                    styles.chip,
+                    municipalityId === m.id && styles.chipActive,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.chipText,
+                      municipalityId === m.id && styles.chipTextActive,
+                    ]}
+                  >
+                    {m.name}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+
+            <Text style={styles.section}>Geç giriş toleransı</Text>
+            <Text style={styles.muted}>
+              Örn. 20:00–21:00 + 30 dk → 20:30’a kadar alınır, 20:31’de alınmaz.
+              Bitiş yine 21:00.
+            </Text>
+            <Text style={styles.label}>Tolerans (dk)</Text>
+            <TextInput
+              value={lateJoinInput}
+              onChangeText={setLateJoinInput}
+              keyboardType="number-pad"
+              editable={canEditRules}
+              style={styles.input}
+            />
+            {canEditRules ? (
+              <Pressable
+                onPress={onSaveRules}
+                disabled={saving}
+                style={({ pressed }) => [
+                  styles.cta,
+                  (pressed || saving) && { opacity: 0.85 },
+                ]}
+              >
+                <Text style={styles.ctaText}>
+                  {saving ? 'Kaydediliyor...' : 'Kuralları kaydet'}
+                </Text>
+              </Pressable>
+            ) : (
+              <Text style={styles.muted}>
+                Kuralları sadece admin / süper admin değiştirebilir.
+              </Text>
+            )}
+
+            {rules.length === 0 ? (
+              <Text style={[styles.muted, { marginTop: spacing.md }]}>
+                Bu belediye için kural satırı yok. Seed/migration çalıştır.
+              </Text>
+            ) : null}
+          </>
         ) : tab === 'users' && canManageUsers ? (
           <>
             <Text style={styles.section}>
@@ -302,13 +427,7 @@ export function AdminScreen() {
               {municipalities.map((m) => (
                 <Pressable
                   key={m.id}
-                  onPress={() => {
-                    setMunicipalityId(m.id);
-                    const first = facilities.find(
-                      (f) => f.municipalityId === m.id,
-                    );
-                    setFacilityId(first?.id ?? null);
-                  }}
+                  onPress={() => selectMunicipality(m.id)}
                   style={[
                     styles.chip,
                     municipalityId === m.id && styles.chipActive,
