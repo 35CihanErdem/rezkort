@@ -1,9 +1,10 @@
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   FlatList,
   Pressable,
+  RefreshControl,
   StyleSheet,
   Text,
   TextInput,
@@ -11,16 +12,18 @@ import {
 } from 'react-native';
 import { CourtCard } from '../components/CourtCard';
 import { Screen } from '../components/Screen';
+import { usePullToRefresh } from '../hooks/usePullToRefresh';
 import { useBooking } from '../store/BookingContext';
 import { colors, fonts, radii, spacing } from '../theme';
 import { RootStackParamList } from '../types';
 
 export function CourtsScreen() {
-  const { courts } = useBooking();
+  const { courts, refreshAll } = useBooking();
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [query, setQuery] = useState('');
   const [district, setDistrict] = useState<string | null>(null);
+  const { refreshControlProps } = usePullToRefresh(refreshAll);
 
   const districts = useMemo(
     () => Array.from(new Set(courts.map((c) => c.district))).sort(),
@@ -40,9 +43,9 @@ export function CourtsScreen() {
     });
   }, [courts, district, query]);
 
-  return (
-    <Screen>
-      <View style={[styles.screen, { paddingTop: spacing.md }]}>
+  const header = useCallback(
+    () => (
+      <View>
         <Text style={styles.brand}>RezKort</Text>
         <Text style={styles.subtitle}>
           Boş saati gör, tek dokunuşla rezerve et.
@@ -84,10 +87,19 @@ export function CourtsScreen() {
             </Pressable>
           ))}
         </View>
+      </View>
+    ),
+    [district, districts, query],
+  );
 
+  return (
+    <Screen>
+      <View style={[styles.screen, { paddingTop: spacing.md }]}>
         <FlatList
           data={filtered}
           keyExtractor={(item) => item.id}
+          ListHeaderComponent={header}
+          refreshControl={<RefreshControl {...refreshControlProps} />}
           contentContainerStyle={styles.list}
           ItemSeparatorComponent={() => (
             <View style={{ height: spacing.sm }} />

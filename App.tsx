@@ -9,8 +9,9 @@ import {
   useFonts as useDmSans,
 } from '@expo-google-fonts/dm-sans';
 import { StatusBar } from 'expo-status-bar';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { TennisLoader } from './src/components/TennisLoader';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { BookingProvider, useBooking } from './src/store/BookingContext';
@@ -23,7 +24,7 @@ function AppReady() {
   if (authLoading || !bookingReady) {
     return (
       <View style={styles.boot}>
-        <ActivityIndicator size="large" color={colors.court} />
+        <TennisLoader label="Kort hazırlanıyor..." size="lg" />
       </View>
     );
   }
@@ -47,7 +48,7 @@ export default function App() {
   if (!bebasLoaded || !dmLoaded) {
     return (
       <View style={styles.boot}>
-        <ActivityIndicator size="large" color={colors.court} />
+        <TennisLoader label="RezKort açılıyor..." size="lg" />
       </View>
     );
   }

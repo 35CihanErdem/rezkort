@@ -2,6 +2,7 @@ import { useState } from 'react';
 import {
   Alert,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -9,7 +10,9 @@ import {
   View,
 } from 'react-native';
 import { Screen } from '../components/Screen';
+import { LoadingOverlay } from '../components/LoadingOverlay';
 import { displayName, useAuth } from '../context/AuthContext';
+import { usePullToRefresh } from '../hooks/usePullToRefresh';
 import { colors, fonts, radii, spacing } from '../theme';
 import { formatPhoneDisplay } from '../utils/phone';
 import { roleLabel } from '../utils/roles';
@@ -21,7 +24,9 @@ export function AccountScreen() {
     updateEmail,
     updatePhone,
     updateProfile,
+    refreshProfile,
   } = useAuth();
+  const { refreshControlProps } = usePullToRefresh(refreshProfile);
 
   const [editingProfile, setEditingProfile] = useState(false);
   const [editingPhone, setEditingPhone] = useState(false);
@@ -93,10 +98,12 @@ export function AccountScreen() {
 
   return (
     <Screen>
+      <LoadingOverlay visible={busy} label="Kaydediliyor..." />
       <ScrollView
         style={styles.screen}
         contentContainerStyle={{ paddingTop: spacing.md, paddingBottom: spacing.xl }}
         keyboardShouldPersistTaps="handled"
+        refreshControl={<RefreshControl {...refreshControlProps} />}
       >
         <Text style={styles.brand}>Hesap</Text>
         <Text style={styles.subtitle}>

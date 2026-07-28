@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import { Screen } from '../../components/Screen';
+import { LoadingOverlay } from '../../components/LoadingOverlay';
 import { useAuth } from '../../context/AuthContext';
 import { colors, spacing } from '../../theme';
 import { AuthStackParamList } from '../../types';
@@ -46,6 +47,7 @@ export function ForgotPasswordScreen() {
 
   return (
     <Screen variant="hero">
+      <LoadingOverlay visible={loading} label="Mail gönderiliyor..." />
       <KeyboardAvoidingView
         style={authStyles.screen}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -88,9 +90,7 @@ export function ForgotPasswordScreen() {
                 (pressed || loading) && { opacity: 0.88 },
               ]}
             >
-              <Text style={authStyles.ctaText}>
-                {loading ? 'Gönderiliyor...' : 'Sıfırlama linki gönder'}
-              </Text>
+              <Text style={authStyles.ctaText}>Sıfırlama linki gönder</Text>
             </Pressable>
 
             <View style={authStyles.linkRow}>

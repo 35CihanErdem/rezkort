@@ -19,6 +19,8 @@ type BookingContextValue = {
   courts: Court[];
   bookings: Booking[];
   refreshCourts: () => Promise<void>;
+  /** Kortlar + rezervasyonlar + kurallar */
+  refreshAll: () => Promise<void>;
   getLateJoinMinutesForCourt: (courtId: string) => number;
   addCourt: (input: {
     name: string;
@@ -299,6 +301,10 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
     [loadCoreData, loadUserBookings],
   );
 
+  const refreshAll = useCallback(async () => {
+    await Promise.all([loadCoreData(), loadUserBookings()]);
+  }, [loadCoreData, loadUserBookings]);
+
   const getLateJoinMinutesForCourt = useCallback(
     (courtId: string): number => {
       const court = courts.find((c) => c.id === courtId);
@@ -317,6 +323,7 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
       courts,
       bookings,
       refreshCourts: loadCoreData,
+      refreshAll,
       getLateJoinMinutesForCourt,
       addCourt,
       bookSlot,
@@ -329,6 +336,7 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
       courts,
       bookings,
       loadCoreData,
+      refreshAll,
       getLateJoinMinutesForCourt,
       addCourt,
       bookSlot,

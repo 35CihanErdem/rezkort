@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -9,9 +10,11 @@ import {
   View,
 } from 'react-native';
 import { Screen } from '../components/Screen';
+import { LoadingOverlay } from '../components/LoadingOverlay';
 import { TennisLoader } from '../components/TennisLoader';
 import { useAuth } from '../context/AuthContext';
 import * as adminService from '../services/admin.service';
+import { usePullToRefresh } from '../hooks/usePullToRefresh';
 import { useBooking } from '../store/BookingContext';
 import { colors, fonts, radii, spacing } from '../theme';
 import type {
@@ -80,8 +83,8 @@ export function AdminScreen() {
     [adminCourts, facilityId],
   );
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true);
     try {
       const tasks: Promise<unknown>[] = [
         adminService.listMunicipalities(),
@@ -116,9 +119,12 @@ export function AdminScreen() {
         e instanceof Error ? e.message : 'Admin verisi alınamadı.',
       );
     } finally {
-      setLoading(false);
+      if (!opts?.silent) setLoading(false);
     }
   }, [canManageUsers]);
+
+  const pullRefresh = useCallback(() => load({ silent: true }), [load]);
+  const { refreshControlProps } = usePullToRefresh(pullRefresh);
 
   useEffect(() => {
     if (allowed) void load();
@@ -260,10 +266,12 @@ export function AdminScreen() {
 
   return (
     <Screen>
+      <LoadingOverlay visible={saving} label="Kaydediliyor..." />
       <ScrollView
         style={styles.screen}
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
+        refreshControl={<RefreshControl {...refreshControlProps} />}
       >
         <Text style={styles.brand}>Admin</Text>
         <Text style={styles.subtitle}>
@@ -373,9 +381,7 @@ export function AdminScreen() {
                   (pressed || saving) && { opacity: 0.85 },
                 ]}
               >
-                <Text style={styles.ctaText}>
-                  {saving ? 'Kaydediliyor...' : 'Kuralları kaydet'}
-                </Text>
+                <Text style={styles.ctaText}>Kuralları kaydet</Text>
               </Pressable>
             ) : (
               <Text style={styles.muted}>
@@ -478,9 +484,7 @@ export function AdminScreen() {
                 (pressed || saving) && { opacity: 0.85 },
               ]}
             >
-              <Text style={styles.ctaText}>
-                {saving ? 'Kaydediliyor...' : 'Tesis ekle'}
-              </Text>
+              <Text style={styles.ctaText}>Tesis ekle</Text>
             </Pressable>
 
             <Text style={styles.section}>
@@ -567,9 +571,7 @@ export function AdminScreen() {
                 (pressed || saving) && { opacity: 0.85 },
               ]}
             >
-              <Text style={styles.ctaText}>
-                {saving ? 'Kaydediliyor...' : 'Kort ekle'}
-              </Text>
+              <Text style={styles.ctaText}>Kort ekle</Text>
             </Pressable>
 
             <Text style={styles.section}>

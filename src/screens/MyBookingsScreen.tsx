@@ -3,12 +3,15 @@ import {
   Alert,
   FlatList,
   Pressable,
+  RefreshControl,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 import { Screen } from '../components/Screen';
+import { LoadingOverlay } from '../components/LoadingOverlay';
 import { useAuth } from '../context/AuthContext';
+import { usePullToRefresh } from '../hooks/usePullToRefresh';
 import { useBooking } from '../store/BookingContext';
 import { colors, fonts, radii, spacing } from '../theme';
 import { Booking } from '../types';
@@ -19,9 +22,10 @@ type Tab = 'active' | 'past';
 
 export function MyBookingsScreen() {
   const { profile } = useAuth();
-  const { bookings, courts, cancelBooking } = useBooking();
+  const { bookings, courts, cancelBooking, refreshAll } = useBooking();
   const [tab, setTab] = useState<Tab>('active');
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const { refreshControlProps } = usePullToRefresh(refreshAll);
 
   const mine = useMemo(
     () => bookings.filter((b) => b.userId === profile?.id),
@@ -138,9 +142,7 @@ export function MyBookingsScreen() {
             disabled={cancellingId === item.id}
             style={styles.cancel}
           >
-            <Text style={styles.cancelText}>
-              {cancellingId === item.id ? 'İptal ediliyor...' : 'İptal et'}
-            </Text>
+            <Text style={styles.cancelText}>İptal et</Text>
           </Pressable>
         ) : null}
       </View>
@@ -149,6 +151,10 @@ export function MyBookingsScreen() {
 
   return (
     <Screen>
+      <LoadingOverlay
+        visible={Boolean(cancellingId)}
+        label="İptal ediliyor..."
+      />
       <View style={[styles.screen, { paddingTop: spacing.md }]}>
         <Text style={styles.brand}>Randevular</Text>
         <Text style={styles.subtitle}>
@@ -219,6 +225,7 @@ export function MyBookingsScreen() {
         <FlatList
           data={list}
           keyExtractor={(item) => item.id}
+          refreshControl={<RefreshControl {...refreshControlProps} />}
           contentContainerStyle={styles.list}
           ItemSeparatorComponent={() => (
             <View style={{ height: spacing.sm }} />

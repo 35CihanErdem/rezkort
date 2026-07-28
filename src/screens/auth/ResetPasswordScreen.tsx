@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import { Screen } from '../../components/Screen';
+import { LoadingOverlay } from '../../components/LoadingOverlay';
 import { useAuth } from '../../context/AuthContext';
 import { colors, spacing } from '../../theme';
 import { AuthStackParamList } from '../../types';
@@ -52,6 +53,7 @@ export function ResetPasswordScreen() {
 
   return (
     <Screen variant="hero">
+      <LoadingOverlay visible={loading} label="Şifre kaydediliyor..." />
       <KeyboardAvoidingView
         style={authStyles.screen}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -102,9 +104,7 @@ export function ResetPasswordScreen() {
                 (pressed || loading) && { opacity: 0.88 },
               ]}
             >
-              <Text style={authStyles.ctaText}>
-                {loading ? 'Kaydediliyor...' : 'Şifreyi kaydet'}
-              </Text>
+              <Text style={authStyles.ctaText}>Şifreyi kaydet</Text>
             </Pressable>
           </View>
         </ScrollView>

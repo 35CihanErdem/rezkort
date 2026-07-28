@@ -2,9 +2,8 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as Linking from 'expo-linking';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { TennisLoader } from '../components/TennisLoader';
 import { useAuth } from '../context/AuthContext';
 import { AUTH_REDIRECT_SCHEME } from '../lib/supabase';
 import { AccountScreen } from '../screens/AccountScreen';
@@ -151,15 +150,7 @@ const linking = {
 };
 
 export function RootNavigator() {
-  const { loading, profile, session, passwordRecovery } = useAuth();
-
-  if (loading) {
-    return (
-      <View style={styles.boot}>
-        <TennisLoader label="Kort hazırlanıyor..." size="lg" />
-      </View>
-    );
-  }
+  const { profile, session, passwordRecovery } = useAuth();
 
   const isAuthed = Boolean(session && profile) && !passwordRecovery;
 
@@ -169,12 +160,3 @@ export function RootNavigator() {
     </NavigationContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  boot: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.bg,
-  },
-});

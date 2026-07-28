@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import { Screen } from '../../components/Screen';
+import { LoadingOverlay } from '../../components/LoadingOverlay';
 import { useAuth } from '../../context/AuthContext';
 import { colors, spacing } from '../../theme';
 import { AuthStackParamList } from '../../types';
@@ -66,6 +67,7 @@ export function RegisterScreen() {
 
   return (
     <Screen variant="hero">
+      <LoadingOverlay visible={loading} label="Hesap oluşturuluyor..." />
       <KeyboardAvoidingView
         style={authStyles.screen}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -169,9 +171,7 @@ export function RegisterScreen() {
                 (pressed || loading) && { opacity: 0.88 },
               ]}
             >
-              <Text style={authStyles.ctaText}>
-                {loading ? 'Hesap oluşturuluyor...' : 'Kayıt ol'}
-              </Text>
+              <Text style={authStyles.ctaText}>Kayıt ol</Text>
             </Pressable>
 
             <View style={authStyles.linkRow}>

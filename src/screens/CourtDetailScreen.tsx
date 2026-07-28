@@ -1,15 +1,18 @@
 import { RouteProp, useRoute } from '@react-navigation/native';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 import { Screen } from '../components/Screen';
+import { LoadingOverlay } from '../components/LoadingOverlay';
 import { displayName, useAuth } from '../context/AuthContext';
+import { usePullToRefresh } from '../hooks/usePullToRefresh';
 import { useBooking } from '../store/BookingContext';
 import { colors, fonts, radii, spacing } from '../theme';
 import { RootStackParamList } from '../types';
@@ -26,6 +29,7 @@ export function CourtDetailScreen() {
     getBookingForSlot,
     getActiveBookingForPhone,
     getLateJoinMinutesForCourt,
+    refreshAll,
   } = useBooking();
   const court = courts.find((c) => c.id === route.params.courtId);
 
@@ -35,6 +39,12 @@ export function CourtDetailScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [now, setNow] = useState(() => new Date());
+
+  const onPullRefresh = useCallback(async () => {
+    await refreshAll();
+    setNow(new Date());
+  }, [refreshAll]);
+  const { refreshControlProps } = usePullToRefresh(onPullRefresh);
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 30_000);
@@ -125,12 +135,19 @@ export function CourtDetailScreen() {
     );
   }
 
+  const busy = submitting || cancelling;
+
   return (
     <Screen edges={['bottom', 'left', 'right']}>
+      <LoadingOverlay
+        visible={busy}
+        label={cancelling ? 'İptal ediliyor...' : 'Rezerve ediliyor...'}
+      />
       <ScrollView
         style={styles.screen}
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
+        refreshControl={<RefreshControl {...refreshControlProps} />}
       >
         <Text style={styles.district}>{selectedCourt.district}</Text>
         <Text style={styles.title}>{selectedCourt.name}</Text>
@@ -152,9 +169,7 @@ export function CourtDetailScreen() {
                 (pressed || cancelling) && { opacity: 0.85 },
               ]}
             >
-              <Text style={styles.cancelBtnText}>
-                {cancelling ? 'İptal ediliyor...' : 'Bu randevuyu iptal et'}
-              </Text>
+              <Text style={styles.cancelBtnText}>Bu randevuyu iptal et</Text>
             </Pressable>
           </View>
         ) : null}
@@ -268,9 +283,7 @@ export function CourtDetailScreen() {
           <Text style={styles.ctaText}>
             {activeBooking
               ? 'Önce aktif randevuyu iptal et'
-              : submitting
-                ? 'Kaydediliyor...'
-                : 'Saati rezerve et'}
+              : 'Saati rezerve et'}
           </Text>
         </Pressable>
       </ScrollView>
