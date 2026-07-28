@@ -1,15 +1,31 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { ReactNode } from 'react';
 import { StyleSheet, View, ViewStyle } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme';
 
 type Props = {
   children: ReactNode;
   style?: ViewStyle;
   variant?: 'light' | 'hero';
+  /** Tab ekranları: üst. Header'lı ekran: alt. Auth: üst. */
+  edges?: Array<'top' | 'bottom' | 'left' | 'right'>;
 };
 
-export function Screen({ children, style, variant = 'light' }: Props) {
+export function Screen({
+  children,
+  style,
+  variant = 'light',
+  edges = ['top', 'left', 'right'],
+}: Props) {
+  const insets = useSafeAreaInsets();
+  const pad: ViewStyle = {
+    paddingTop: edges.includes('top') ? insets.top : 0,
+    paddingBottom: edges.includes('bottom') ? insets.bottom : 0,
+    paddingLeft: edges.includes('left') ? insets.left : 0,
+    paddingRight: edges.includes('right') ? insets.right : 0,
+  };
+
   if (variant === 'hero') {
     return (
       <View style={styles.root}>
@@ -21,7 +37,7 @@ export function Screen({ children, style, variant = 'light' }: Props) {
         />
         <View style={styles.courtLineH} />
         <View style={styles.courtLineV} />
-        <View style={[styles.content, style]}>{children}</View>
+        <View style={[styles.content, pad, style]}>{children}</View>
       </View>
     );
   }
@@ -35,7 +51,7 @@ export function Screen({ children, style, variant = 'light' }: Props) {
         style={StyleSheet.absoluteFill}
       />
       <View style={styles.softOrb} />
-      <View style={[styles.content, style]}>{children}</View>
+      <View style={[styles.content, pad, style]}>{children}</View>
     </View>
   );
 }

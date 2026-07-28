@@ -10,7 +10,6 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Screen } from '../../components/Screen';
 import { useAuth } from '../../store/AuthContext';
 import { colors, spacing } from '../../theme';
@@ -18,7 +17,6 @@ import { AuthStackParamList } from '../../types';
 import { authStyles } from './authStyles';
 
 export function LoginScreen() {
-  const insets = useSafeAreaInsets();
   const navigation =
     useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
   const { login } = useAuth();
@@ -44,7 +42,7 @@ export function LoginScreen() {
         <ScrollView
           contentContainerStyle={[
             authStyles.content,
-            { paddingTop: insets.top + spacing.xl },
+            { paddingTop: spacing.xl },
           ]}
           keyboardShouldPersistTaps="handled"
         >
@@ -56,10 +54,10 @@ export function LoginScreen() {
           <View style={authStyles.panel}>
             <Text style={authStyles.title}>Giriş yap</Text>
             <Text style={authStyles.subtitle}>
-              Telefon (önerilir), e-posta veya kullanıcı adı + şifre.
+              En kolayı: kayıtlı e-posta + şifre. Telefon da olur.
             </Text>
 
-            <Text style={authStyles.label}>Telefon / e-posta / kullanıcı adı</Text>
+            <Text style={authStyles.label}>E-posta (önerilir) / telefon / kullanıcı adı</Text>
             <TextInput
               value={identifier}
               onChangeText={setIdentifier}

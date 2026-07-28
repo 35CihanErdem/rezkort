@@ -7,7 +7,6 @@ import {
   Text,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Screen } from '../components/Screen';
 import { useAuth } from '../store/AuthContext';
 import { useBooking } from '../store/BookingContext';
@@ -19,10 +18,10 @@ import { formatDateLabel, formatSlot } from '../utils/date';
 type Tab = 'active' | 'past';
 
 export function MyBookingsScreen() {
-  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const { bookings, courts, cancelBooking } = useBooking();
   const [tab, setTab] = useState<Tab>('active');
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
 
   const mine = useMemo(
     () => bookings.filter((b) => b.userId === user?.id),
@@ -90,7 +89,15 @@ export function MyBookingsScreen() {
     return (
       <View style={[styles.card, isPast && styles.cardPast]}>
         {isPast ? (
-          <Text style={styles.pastBadge}>Geçmiş · oynandı</Text>
+          <Text style={styles.pastBadge}>
+            {item.status === 'cancelled'
+              ? 'İptal'
+              : item.status === 'cancelled_late'
+                ? 'Geç iptal'
+                : item.status === 'no_show'
+                  ? 'Gelmedi'
+                  : 'Geçmiş · oynandı'}
+          </Text>
         ) : (
           <Text style={styles.activeBadge}>Aktif</Text>
         )}
@@ -114,14 +121,26 @@ export function MyBookingsScreen() {
                   {
                     text: 'İptal et',
                     style: 'destructive',
-                    onPress: () => cancelBooking(item.id),
+                    onPress: async () => {
+                      setCancellingId(item.id);
+                      const result = await cancelBooking(item.id);
+                      setCancellingId(null);
+                      if (!result.ok) {
+                        Alert.alert('İptal edilemedi', result.reason);
+                        return;
+                      }
+                      Alert.alert('İptal edildi', 'Rezervasyonun iptal edildi.');
+                    },
                   },
                 ],
               )
             }
+            disabled={cancellingId === item.id}
             style={styles.cancel}
           >
-            <Text style={styles.cancelText}>İptal et</Text>
+            <Text style={styles.cancelText}>
+              {cancellingId === item.id ? 'İptal ediliyor...' : 'İptal et'}
+            </Text>
           </Pressable>
         ) : null}
       </View>
@@ -130,7 +149,7 @@ export function MyBookingsScreen() {
 
   return (
     <Screen>
-      <View style={[styles.screen, { paddingTop: insets.top + spacing.md }]}>
+      <View style={[styles.screen, { paddingTop: spacing.md }]}>
         <Text style={styles.brand}>Randevular</Text>
         <Text style={styles.subtitle}>
           Aktif randevun ve geçmiş maçların. Aynı anda 1 aktif rezervasyon.

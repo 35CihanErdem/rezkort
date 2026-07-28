@@ -24,7 +24,8 @@ module.exports = {
   },
   android: {
     package: 'com.rezkort.app',
-    versionCode: 2,
+    versionCode: 3,
+    edgeToEdgeEnabled: true,
     adaptiveIcon: {
       backgroundColor: '#145C39',
       foregroundImage: './assets/android-icon-foreground.png',
@@ -38,6 +39,8 @@ module.exports = {
     eas: {
       projectId: 'ac3e545d-82d0-40b7-957b-71128f9d6060',
     },
+    supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL ?? '',
+    supabaseKey: process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? '',
     emailjs: {
       serviceId: process.env.EXPO_PUBLIC_EMAILJS_SERVICE_ID ?? '',
       templateId: process.env.EXPO_PUBLIC_EMAILJS_TEMPLATE_ID ?? '',

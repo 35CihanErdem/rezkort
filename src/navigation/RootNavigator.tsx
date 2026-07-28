@@ -2,6 +2,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AccountScreen } from '../screens/AccountScreen';
 import { AdminScreen } from '../screens/AdminScreen';
 import { CourtDetailScreen } from '../screens/CourtDetailScreen';
@@ -30,6 +31,9 @@ function TabIcon({ label, focused }: { label: string; focused: boolean }) {
 }
 
 function MainTabs() {
+  const insets = useSafeAreaInsets();
+  const tabBottom = Math.max(insets.bottom, 8);
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -43,8 +47,8 @@ function MainTabs() {
         tabBarStyle: {
           backgroundColor: colors.surface,
           borderTopColor: colors.line,
-          height: 62,
-          paddingBottom: 8,
+          height: 54 + tabBottom,
+          paddingBottom: tabBottom,
           paddingTop: 6,
         },
       }}
@@ -121,6 +125,7 @@ function AppNavigator() {
             headerTitleStyle: { fontFamily: fonts.bodyBold },
             headerStyle: { backgroundColor: colors.bg },
             headerShadowVisible: false,
+            contentStyle: { backgroundColor: colors.bg },
           }}
       />
     </AppStack.Navigator>

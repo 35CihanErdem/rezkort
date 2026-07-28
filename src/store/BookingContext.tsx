@@ -10,7 +10,7 @@ import { useAuth } from './AuthContext';
 import { supabase } from '../supabase/supabase';
 import { Booking, Court } from '../types';
 import { isBookingActive } from '../utils/booking';
-import { formatHour, toDateKey } from '../utils/date';
+import { toDateKey } from '../utils/date';
 
 type BookingContextValue = {
   ready: boolean;
@@ -31,7 +31,9 @@ type BookingContextValue = {
     phone: string;
     playerName: string;
   }) => Promise<{ ok: true } | { ok: false; reason: string }>;
-  cancelBooking: (bookingId: string) => Promise<void>;
+  cancelBooking: (
+    bookingId: string,
+  ) => Promise<{ ok: true } | { ok: false; reason: string }>;
   getBookingForSlot: (
     courtId: string,
     date: string,
@@ -254,8 +256,20 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
         p_reservation_id: bookingId,
         p_reason: 'Kullanıcı iptali',
       });
-      if (error) throw error;
+      if (error) {
+        const code = error.message;
+        const messageMap: Record<string, string> = {
+          AUTH_REQUIRED: 'Giriş yapman gerekli.',
+          RESERVATION_NOT_FOUND_OR_NOT_ACTIVE:
+            'Rezervasyon bulunamadı veya zaten iptal.',
+        };
+        return {
+          ok: false as const,
+          reason: messageMap[code] ?? 'İptal edilemedi.',
+        };
+      }
       await Promise.all([loadCoreData(), loadUserBookings()]);
+      return { ok: true as const };
     },
     [loadCoreData, loadUserBookings],
   );

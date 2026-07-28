@@ -9,7 +9,6 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CourtCard } from '../components/CourtCard';
 import { Screen } from '../components/Screen';
 import { useBooking } from '../store/BookingContext';
@@ -17,7 +16,6 @@ import { colors, fonts, radii, spacing } from '../theme';
 import { RootStackParamList } from '../types';
 
 export function CourtsScreen() {
-  const insets = useSafeAreaInsets();
   const { courts } = useBooking();
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -44,7 +42,7 @@ export function CourtsScreen() {
 
   return (
     <Screen>
-      <View style={[styles.screen, { paddingTop: insets.top + spacing.md }]}>
+      <View style={[styles.screen, { paddingTop: spacing.md }]}>
         <Text style={styles.brand}>RezKort</Text>
         <Text style={styles.subtitle}>
           Boş saati gör, tek dokunuşla rezerve et.

@@ -11,7 +11,6 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Screen } from '../../components/Screen';
 import { useAuth } from '../../store/AuthContext';
 import { colors, spacing } from '../../theme';
@@ -19,7 +18,6 @@ import { AuthStackParamList } from '../../types';
 import { authStyles } from './authStyles';
 
 export function OtpScreen() {
-  const insets = useSafeAreaInsets();
   const navigation =
     useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
   const { pending, verifyOtp, resendOtp } = useAuth();
@@ -68,7 +66,7 @@ export function OtpScreen() {
         <ScrollView
           contentContainerStyle={[
             authStyles.content,
-            { paddingTop: insets.top + spacing.xl },
+            { paddingTop: spacing.xl },
           ]}
           keyboardShouldPersistTaps="handled"
         >

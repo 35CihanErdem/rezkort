@@ -1,19 +1,17 @@
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Screen } from '../components/Screen';
 import { displayName, useAuth } from '../store/AuthContext';
 import { colors, fonts, radii, spacing } from '../theme';
 import { formatPhoneDisplay } from '../utils/phone';
 
 export function AccountScreen() {
-  const insets = useSafeAreaInsets();
   const { user, logout } = useAuth();
 
   if (!user) return null;
 
   return (
     <Screen>
-      <View style={[styles.screen, { paddingTop: insets.top + spacing.md }]}>
+      <View style={[styles.screen, { paddingTop: spacing.md }]}>
         <Text style={styles.brand}>Hesap</Text>
         <Text style={styles.subtitle}>
           Ana kimlik telefon · e-posta bu numaraya bağlı

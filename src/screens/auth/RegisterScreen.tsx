@@ -11,7 +11,6 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Screen } from '../../components/Screen';
 import { useAuth } from '../../store/AuthContext';
 import { colors, spacing } from '../../theme';
@@ -20,7 +19,6 @@ import { normalizeEmail } from '../../utils/email';
 import { authStyles } from './authStyles';
 
 export function RegisterScreen() {
-  const insets = useSafeAreaInsets();
   const navigation =
     useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
   const { startRegister } = useAuth();
@@ -66,7 +64,7 @@ export function RegisterScreen() {
         <ScrollView
           contentContainerStyle={[
             authStyles.content,
-            { paddingTop: insets.top + spacing.xl },
+            { paddingTop: spacing.xl },
           ]}
           keyboardShouldPersistTaps="handled"
         >

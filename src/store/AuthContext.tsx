@@ -447,34 +447,88 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
       }
 
-      const { data: resolvedEmail, error: lookupError } = await supabase.rpc(
-        'resolve_login_email',
-        { p_identifier: raw },
-      );
-      if (lookupError) {
-        return { ok: false as const, reason: lookupError.message };
-      }
-      if (!resolvedEmail) {
-        return { ok: false as const, reason: 'Hesap bulunamadı.' };
-      }
+      try {
+        let email: string | null = null;
 
-      const { data: signInData, error: signInError } =
-        await supabase.auth.signInWithPassword({
-          email: resolvedEmail as string,
-          password: input.password,
-        });
-      if (signInError) {
-        return { ok: false as const, reason: signInError.message };
-      }
+        // E-posta ile doğrudan auth (profiles RPC'ye bağımlı değil)
+        if (raw.includes('@')) {
+          email = normalizeEmail(raw);
+        } else {
+          const { data: resolvedEmail, error: lookupError } = await supabase.rpc(
+            'resolve_login_email',
+            { p_identifier: raw },
+          );
+          if (lookupError) {
+            // RPC yoksa / yetki yoksa daha anlaşılır mesaj
+            return {
+              ok: false as const,
+              reason: `Hesap aranamadı: ${lookupError.message}. E-posta ile giriş dene.`,
+            };
+          }
+          email = (resolvedEmail as string | null) ?? null;
+        }
 
-      const userId = signInData.user?.id;
-      if (!userId) {
-        return { ok: false as const, reason: 'Oturum açılamadı.' };
-      }
+        if (!email) {
+          return {
+            ok: false as const,
+            reason:
+              'Hesap bulunamadı. Kayıtlı e-posta ile dene (telefon yerine).',
+          };
+        }
 
-      const profile = await loadProfile(userId);
-      setUser(profile);
-      return { ok: true as const };
+        const { data: signInData, error: signInError } =
+          await supabase.auth.signInWithPassword({
+            email,
+            password: input.password,
+          });
+        if (signInError) {
+          return { ok: false as const, reason: signInError.message };
+        }
+
+        const userId = signInData.user?.id;
+        if (!userId) {
+          return { ok: false as const, reason: 'Oturum açılamadı.' };
+        }
+
+        try {
+          const profile = await loadProfile(userId);
+          setUser(profile);
+        } catch {
+          // Auth var, profil yoksa metadata ile tamamla
+          const meta = signInData.user?.user_metadata ?? {};
+          const { error: profileError } = await supabase.rpc(
+            'upsert_own_profile',
+            {
+              p_phone:
+                (meta.phone as string) ||
+                toE164TR(raw) ||
+                '+900000000000',
+              p_email: email,
+              p_first_name: (meta.first_name as string) || 'Kullanıcı',
+              p_last_name: (meta.last_name as string) || 'Yeni',
+              p_username:
+                (meta.username as string) ||
+                email.split('@')[0] ||
+                userId.slice(0, 12),
+            },
+          );
+          if (profileError) {
+            return {
+              ok: false as const,
+              reason: `Giriş oldu ama profil eksik: ${profileError.message}`,
+            };
+          }
+          const profile = await loadProfile(userId);
+          setUser(profile);
+        }
+
+        return { ok: true as const };
+      } catch (e) {
+        return {
+          ok: false as const,
+          reason: e instanceof Error ? e.message : 'Giriş yapılamadı.',
+        };
+      }
     },
     [loadProfile],
   );

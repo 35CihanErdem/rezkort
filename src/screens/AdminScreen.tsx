@@ -8,13 +8,11 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBooking } from '../store/BookingContext';
 import { Screen } from '../components/Screen';
 import { colors, fonts, radii, spacing } from '../theme';
 
 export function AdminScreen() {
-  const insets = useSafeAreaInsets();
   const { addCourt, courts } = useBooking();
   const [name, setName] = useState('');
   const [district, setDistrict] = useState('');
@@ -64,10 +62,7 @@ export function AdminScreen() {
     <Screen>
     <ScrollView
       style={styles.screen}
-      contentContainerStyle={[
-        styles.content,
-        { paddingTop: insets.top + spacing.md },
-      ]}
+      contentContainerStyle={[styles.content, { paddingTop: spacing.md }]}
     >
       <Text style={styles.brand}>Admin</Text>
       <Text style={styles.subtitle}>
