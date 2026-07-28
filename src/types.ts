@@ -3,19 +3,29 @@ export type User = {
   firstName: string;
   lastName: string;
   /** Ana kimlik: 1 telefon = 1 hesap (farklı e-posta ile tekrar kayıt yok) */
-  phone: string; // 10 hane, 5xxxxxxxxx
+  phone: string; // E.164: +905xxxxxxxxx
   /** E-posta doğrulaması sonrası telefona bağlanır */
   email: string;
   username: string;
-  passwordHash: string;
+  role: 'citizen' | 'staff' | 'admin' | 'super_admin';
+  phoneVerified: boolean;
+  emailVerified: boolean;
+  isActive: boolean;
+  lastLoginAt?: string | null;
   createdAt: string;
+  updatedAt: string;
 };
 
 export type Court = {
   id: string;
+  facilityId?: string;
   name: string;
   district: string;
   address: string;
+  municipalityName?: string;
+  surfaceType?: 'hard' | 'clay' | 'acrylic';
+  hasLights?: boolean;
+  status?: 'active' | 'maintenance' | 'inactive';
   openHour: number;
   closeHour: number;
 };
@@ -24,11 +34,19 @@ export type Booking = {
   id: string;
   courtId: string;
   date: string; // YYYY-MM-DD
-  hour: number;
+  startHour: number;
+  endHour: number;
+  status: 'active' | 'cancelled' | 'cancelled_late' | 'completed' | 'no_show';
+  reservationSource: 'mobile' | 'admin' | 'staff' | 'qr';
+  checkedIn: boolean;
   userId: string;
   phone: string;
   playerName: string;
+  notes?: string | null;
+  cancelledAt?: string | null;
+  completedAt?: string | null;
   createdAt: string;
+  updatedAt: string;
 };
 
 export type AuthStackParamList = {

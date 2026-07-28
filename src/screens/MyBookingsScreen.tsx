@@ -34,7 +34,9 @@ export function MyBookingsScreen() {
       mine
         .filter((b) => isBookingActive(b))
         .sort((a, b) =>
-          a.date === b.date ? a.hour - b.hour : a.date.localeCompare(b.date),
+          a.date === b.date
+            ? a.startHour - b.startHour
+            : a.date.localeCompare(b.date),
         ),
     [mine],
   );
@@ -44,7 +46,9 @@ export function MyBookingsScreen() {
       mine
         .filter((b) => isBookingPast(b))
         .sort((a, b) =>
-          a.date === b.date ? b.hour - a.hour : b.date.localeCompare(a.date),
+          a.date === b.date
+            ? b.startHour - a.startHour
+            : b.date.localeCompare(a.date),
         ),
     [mine],
   );
@@ -97,7 +101,7 @@ export function MyBookingsScreen() {
           <Text style={styles.district}>{court.district}</Text>
         ) : null}
         <Text style={[styles.meta, isPast && styles.textMuted]}>
-          {formatDateLabel(item.date)} · {formatSlot(item.hour)}
+          {formatDateLabel(item.date)} · {formatSlot(item.startHour)}
         </Text>
         {!isPast ? (
           <Pressable

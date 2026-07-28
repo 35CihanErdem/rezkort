@@ -15,6 +15,20 @@ export function isValidTrMobile(phone: string): boolean {
   return /^5\d{9}$/.test(p);
 }
 
+export function toE164TR(phone: string): string {
+  const p = normalizePhone(phone);
+  if (!/^5\d{9}$/.test(p)) return phone.trim();
+  return `+90${p}`;
+}
+
+export function normalizePhoneForLookup(phone: string): string {
+  const value = phone.trim();
+  if (value.startsWith('+')) {
+    return value.replace(/\s+/g, '');
+  }
+  return toE164TR(value);
+}
+
 export function formatPhoneDisplay(phone: string): string {
   const p = normalizePhone(phone);
   if (p.length !== 10) return phone;

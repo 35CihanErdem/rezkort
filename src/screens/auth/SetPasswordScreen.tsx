@@ -33,7 +33,7 @@ export function SetPasswordScreen() {
     if (!pending?.emailVerified) {
       navigation.replace(pending ? 'Otp' : 'Register');
     } else if (pending && !username) {
-      setUsername(pending.phone);
+      setUsername(pending.phone.replace('+', ''));
     }
   }, [pending, navigation, username]);
 
@@ -45,9 +45,14 @@ export function SetPasswordScreen() {
     }
 
     setLoading(true);
-    const result = await completeRegister({ username, password });
-    setLoading(false);
-    if (!result.ok) setError(result.reason);
+    try {
+      const result = await completeRegister({ username, password });
+      if (!result.ok) setError(result.reason);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Kayıt tamamlanamadı.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   if (!pending?.emailVerified) return null;

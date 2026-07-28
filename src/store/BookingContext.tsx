@@ -1,4 +1,3 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, {
   createContext,
   useCallback,
@@ -7,19 +6,23 @@ import React, {
   useMemo,
   useState,
 } from 'react';
-import { SEED_COURTS } from '../data/seed';
+import { useAuth } from './AuthContext';
+import { supabase } from '../supabase/supabase';
 import { Booking, Court } from '../types';
 import { isBookingActive } from '../utils/booking';
-import { createId, toDateKey } from '../utils/date';
-
-const COURTS_KEY = 'tenis.courts.v1';
-const BOOKINGS_KEY = 'tenis.bookings.v2';
+import { formatHour, toDateKey } from '../utils/date';
 
 type BookingContextValue = {
   ready: boolean;
   courts: Court[];
   bookings: Booking[];
-  addCourt: (input: Omit<Court, 'id'>) => Promise<void>;
+  addCourt: (input: {
+    name: string;
+    district: string;
+    address: string;
+    openHour: number;
+    closeHour: number;
+  }) => Promise<void>;
   bookSlot: (input: {
     courtId: string;
     date: string;
@@ -40,58 +43,123 @@ type BookingContextValue = {
 const BookingContext = createContext<BookingContextValue | null>(null);
 
 export function BookingProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
   const [ready, setReady] = useState(false);
-  const [courts, setCourts] = useState<Court[]>(SEED_COURTS);
+  const [courts, setCourts] = useState<Court[]>([]);
+  const [slotReservations, setSlotReservations] = useState<Booking[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      try {
-        const [courtsRaw, bookingsRaw] = await Promise.all([
-          AsyncStorage.getItem(COURTS_KEY),
-          AsyncStorage.getItem(BOOKINGS_KEY),
-        ]);
-
-        if (cancelled) return;
-
-        if (courtsRaw) {
-          setCourts(JSON.parse(courtsRaw) as Court[]);
-        } else {
-          await AsyncStorage.setItem(COURTS_KEY, JSON.stringify(SEED_COURTS));
-        }
-
-        if (bookingsRaw) {
-          setBookings(JSON.parse(bookingsRaw) as Booking[]);
-        }
-      } finally {
-        if (!cancelled) setReady(true);
-      }
-    }
-
-    load();
-    return () => {
-      cancelled = true;
+  const mapCourt = useCallback((row: any): Court => {
+    const facility = row.facilities ?? {};
+    const municipality = facility.municipalities ?? {};
+    return {
+      id: row.id,
+      facilityId: row.facility_id,
+      name: row.name,
+      district: facility.district ?? '',
+      address: facility.address ?? '',
+      municipalityName: municipality.name ?? '',
+      surfaceType: row.surface_type,
+      hasLights: row.has_lights,
+      status: row.status,
+      openHour: row.open_hour,
+      closeHour: row.close_hour,
     };
   }, []);
 
-  const persistCourts = useCallback(async (next: Court[]) => {
-    setCourts(next);
-    await AsyncStorage.setItem(COURTS_KEY, JSON.stringify(next));
+  const mapBooking = useCallback((row: any): Booking => {
+    const profile = row.profiles ?? {};
+    const firstName = profile.first_name ?? '';
+    const lastName = profile.last_name ?? '';
+    const playerName = `${firstName} ${lastName}`.trim() || 'Oyuncu';
+    return {
+      id: row.id,
+      courtId: row.court_id,
+      date: row.date,
+      startHour: row.start_hour,
+      endHour: row.end_hour,
+      status: row.status,
+      reservationSource: row.reservation_source ?? 'mobile',
+      checkedIn: Boolean(row.checked_in),
+      userId: row.user_id,
+      phone: row.phone,
+      playerName,
+      notes: row.notes,
+      cancelledAt: row.cancelled_at,
+      completedAt: row.completed_at,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    };
   }, []);
 
-  const persistBookings = useCallback(async (next: Booking[]) => {
-    setBookings(next);
-    await AsyncStorage.setItem(BOOKINGS_KEY, JSON.stringify(next));
-  }, []);
+  const loadCoreData = useCallback(async () => {
+    const [{ data: courtRows, error: courtError }, { data: slotRows, error: slotError }] =
+      await Promise.all([
+        supabase
+          .from('courts')
+          .select(
+            'id,facility_id,name,surface_type,has_lights,status,open_hour,close_hour,facilities!inner(district,address,municipalities!inner(name))',
+          )
+          .eq('status', 'active')
+          .order('name', { ascending: true }),
+        supabase
+          .from('reservations')
+          .select(
+            'id,court_id,user_id,phone,date,start_hour,end_hour,status,reservation_source,checked_in,notes,cancelled_at,completed_at,created_at,updated_at,profiles(first_name,last_name)',
+          )
+          .in('status', ['active', 'cancelled_late'])
+          .gte('date', toDateKey(new Date()))
+          .order('date', { ascending: true }),
+      ]);
+
+    if (courtError) throw courtError;
+    setCourts((courtRows ?? []).map(mapCourt));
+
+    // RLS nedeniyle bazı profiller gizli olabilir, yine de slot doluluğu için kayıt tutulur.
+    if (!slotError) {
+      setSlotReservations((slotRows ?? []).map(mapBooking));
+    }
+  }, [mapBooking, mapCourt]);
+
+  const loadUserBookings = useCallback(async () => {
+    if (!user) {
+      setBookings([]);
+      return;
+    }
+    const { data, error } = await supabase
+      .from('reservations')
+      .select(
+        'id,court_id,user_id,phone,date,start_hour,end_hour,status,reservation_source,checked_in,notes,cancelled_at,completed_at,created_at,updated_at,profiles(first_name,last_name)',
+      )
+      .eq('user_id', user.id)
+      .order('date', { ascending: false })
+      .order('start_hour', { ascending: false });
+
+    if (error) throw error;
+    setBookings((data ?? []).map(mapBooking));
+  }, [mapBooking, user]);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        await loadCoreData();
+        await loadUserBookings();
+      } finally {
+        if (alive) setReady(true);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [loadCoreData, loadUserBookings]);
 
   const getBookingForSlot = useCallback(
     (courtId: string, date: string, hour: number) =>
-      bookings.find(
-        (b) => b.courtId === courtId && b.date === date && b.hour === hour,
+      slotReservations.find(
+        (b) => b.courtId === courtId && b.date === date && b.startHour === hour,
       ),
-    [bookings],
+    [slotReservations],
   );
 
   const getActiveBookingForPhone = useCallback(
@@ -100,11 +168,37 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
   );
 
   const addCourt = useCallback(
-    async (input: Omit<Court, 'id'>) => {
-      const court: Court = { ...input, id: createId('court') };
-      await persistCourts([...courts, court]);
+    async (input: {
+      name: string;
+      district: string;
+      address: string;
+      openHour: number;
+      closeHour: number;
+    }) => {
+      // Admin ekrani district'e gore facility secmedigi icin en yakin facility'ye ekliyoruz.
+      const facility =
+        courts.find((c) => c.district === input.district)?.facilityId ??
+        courts[0]?.facilityId;
+
+      if (!facility) {
+        throw new Error('Önce bir tesis/facility kaydı olmalı.');
+      }
+
+      const { error } = await supabase.from('courts').insert({
+        facility_id: facility,
+        name: input.name,
+        surface_type: 'hard',
+        has_lights: false,
+        reservation_duration: 60,
+        description: input.address,
+        status: 'active',
+        open_hour: input.openHour,
+        close_hour: input.closeHour,
+      });
+      if (error) throw error;
+      await loadCoreData();
     },
-    [courts, persistCourts],
+    [courts, loadCoreData],
   );
 
   const bookSlot = useCallback(
@@ -124,57 +218,46 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
         return { ok: false as const, reason: 'Giriş yapman gerekli.' };
       }
 
-      const existing = getActiveBookingForPhone(input.phone);
-      if (existing) {
+      const { error } = await supabase.rpc('book_reservation', {
+        p_court_id: input.courtId,
+        p_date: input.date,
+        p_start_hour: input.hour,
+        p_end_hour: input.hour + 1,
+        p_source: 'mobile',
+        p_notes: `Oyuncu: ${name}`,
+      });
+      if (error) {
+        const code = error.message;
+        const messageMap: Record<string, string> = {
+          ACTIVE_RESERVATION_LIMIT_REACHED:
+            'Aktif rezervasyon limitine ulaştın.',
+          SLOT_ALREADY_BOOKED: 'Bu saat dolu.',
+          TOO_FAR_IN_FUTURE: 'Bu tarih için erken rezervasyon yapılamaz.',
+          PAST_SLOT_NOT_ALLOWED: 'Geçmiş saate rezervasyon yapılamaz.',
+          OUTSIDE_WORKING_HOURS: 'Kort çalışma saatleri dışında.',
+        };
         return {
           ok: false as const,
-          reason:
-            'Bu telefonla zaten 1 aktif rezervasyonun var. Önce onu iptal et veya saati gelsin.',
+          reason: messageMap[code] ?? 'Rezervasyon oluşturulamadı.',
         };
       }
 
-      const taken = bookings.some(
-        (b) =>
-          b.courtId === input.courtId &&
-          b.date === input.date &&
-          b.hour === input.hour,
-      );
-      if (taken) {
-        return { ok: false as const, reason: 'Bu saat dolu.' };
-      }
-
-      // Geçmiş saate rezervasyon yok
-      const today = toDateKey(new Date());
-      const nowHour = new Date().getHours();
-      if (
-        input.date < today ||
-        (input.date === today && input.hour <= nowHour)
-      ) {
-        return { ok: false as const, reason: 'Geçmiş bir saat seçilemez.' };
-      }
-
-      const booking: Booking = {
-        id: createId('booking'),
-        courtId: input.courtId,
-        date: input.date,
-        hour: input.hour,
-        userId: input.userId,
-        phone: input.phone,
-        playerName: name,
-        createdAt: new Date().toISOString(),
-      };
-
-      await persistBookings([booking, ...bookings]);
+      await Promise.all([loadCoreData(), loadUserBookings()]);
       return { ok: true as const };
     },
-    [bookings, persistBookings, getActiveBookingForPhone],
+    [loadCoreData, loadUserBookings],
   );
 
   const cancelBooking = useCallback(
     async (bookingId: string) => {
-      await persistBookings(bookings.filter((b) => b.id !== bookingId));
+      const { error } = await supabase.rpc('cancel_reservation', {
+        p_reservation_id: bookingId,
+        p_reason: 'Kullanıcı iptali',
+      });
+      if (error) throw error;
+      await Promise.all([loadCoreData(), loadUserBookings()]);
     },
-    [bookings, persistBookings],
+    [loadCoreData, loadUserBookings],
   );
 
   const value = useMemo(
