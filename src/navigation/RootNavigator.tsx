@@ -2,8 +2,9 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as Linking from 'expo-linking';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { TennisLoader } from '../components/TennisLoader';
 import { useAuth } from '../context/AuthContext';
 import { AUTH_REDIRECT_SCHEME } from '../lib/supabase';
 import { AccountScreen } from '../screens/AccountScreen';
@@ -21,6 +22,7 @@ import {
   MainTabParamList,
   RootStackParamList,
 } from '../types';
+import { canAccessAdmin } from '../utils/roles';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 const AppStack = createNativeStackNavigator<RootStackParamList>();
@@ -34,7 +36,9 @@ function TabIcon({ label, focused }: { label: string; focused: boolean }) {
 
 function MainTabs() {
   const insets = useSafeAreaInsets();
+  const { profile } = useAuth();
   const tabBottom = Math.max(insets.bottom, 8);
+  const showAdmin = canAccessAdmin(profile);
 
   return (
     <Tab.Navigator
@@ -85,16 +89,18 @@ function MainTabs() {
           ),
         }}
       />
-      <Tab.Screen
-        name="Admin"
-        component={AdminScreen}
-        options={{
-          title: 'Admin',
-          tabBarIcon: ({ focused }) => (
-            <TabIcon label="⚙️" focused={focused} />
-          ),
-        }}
-      />
+      {showAdmin ? (
+        <Tab.Screen
+          name="Admin"
+          component={AdminScreen}
+          options={{
+            title: 'Admin',
+            tabBarIcon: ({ focused }) => (
+              <TabIcon label="⚙️" focused={focused} />
+            ),
+          }}
+        />
+      ) : null}
     </Tab.Navigator>
   );
 }
@@ -150,7 +156,7 @@ export function RootNavigator() {
   if (loading) {
     return (
       <View style={styles.boot}>
-        <ActivityIndicator size="large" color={colors.court} />
+        <TennisLoader label="Kort hazırlanıyor..." size="lg" />
       </View>
     );
   }

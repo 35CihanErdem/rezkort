@@ -12,6 +12,7 @@ import { Screen } from '../components/Screen';
 import { displayName, useAuth } from '../context/AuthContext';
 import { colors, fonts, radii, spacing } from '../theme';
 import { formatPhoneDisplay } from '../utils/phone';
+import { roleLabel } from '../utils/roles';
 
 export function AccountScreen() {
   const {
@@ -19,15 +20,39 @@ export function AccountScreen() {
     signOut,
     updateEmail,
     updatePhone,
+    updateProfile,
   } = useAuth();
 
+  const [editingProfile, setEditingProfile] = useState(false);
   const [editingPhone, setEditingPhone] = useState(false);
   const [editingEmail, setEditingEmail] = useState(false);
+  const [firstNameInput, setFirstNameInput] = useState('');
+  const [lastNameInput, setLastNameInput] = useState('');
+  const [usernameInput, setUsernameInput] = useState('');
   const [phoneInput, setPhoneInput] = useState('');
   const [emailInput, setEmailInput] = useState('');
   const [busy, setBusy] = useState(false);
 
   if (!profile) return null;
+
+  async function onSaveProfile() {
+    setBusy(true);
+    try {
+      const result = await updateProfile({
+        firstName: firstNameInput,
+        lastName: lastNameInput,
+        username: usernameInput,
+      });
+      if (!result.ok) {
+        Alert.alert('Profil güncellenemedi', result.reason);
+        return;
+      }
+      setEditingProfile(false);
+      Alert.alert('Kaydedildi', 'Ad, soyad ve kullanıcı adı güncellendi.');
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function onSavePhone() {
     setBusy(true);
@@ -79,11 +104,72 @@ export function AccountScreen() {
         </Text>
 
         <View style={styles.card}>
-          <Text style={styles.label}>Ad soyad</Text>
-          <Text style={styles.value}>{displayName(profile)}</Text>
+          <Text style={styles.label}>Ad soyad / kullanıcı adı</Text>
+          {editingProfile ? (
+            <View style={styles.editBlock}>
+              <TextInput
+                value={firstNameInput}
+                onChangeText={setFirstNameInput}
+                placeholder="Ad"
+                placeholderTextColor={colors.muted}
+                autoCapitalize="words"
+                style={styles.input}
+              />
+              <TextInput
+                value={lastNameInput}
+                onChangeText={setLastNameInput}
+                placeholder="Soyad"
+                placeholderTextColor={colors.muted}
+                autoCapitalize="words"
+                style={styles.input}
+              />
+              <TextInput
+                value={usernameInput}
+                onChangeText={setUsernameInput}
+                placeholder="kullanici.adi"
+                placeholderTextColor={colors.muted}
+                autoCapitalize="none"
+                autoCorrect={false}
+                style={styles.input}
+              />
+              <View style={styles.editActions}>
+                <Pressable
+                  onPress={() => setEditingProfile(false)}
+                  style={styles.secondaryBtn}
+                >
+                  <Text style={styles.secondaryBtnText}>Vazgeç</Text>
+                </Pressable>
+                <Pressable
+                  onPress={onSaveProfile}
+                  disabled={busy}
+                  style={styles.primaryBtn}
+                >
+                  <Text style={styles.primaryBtnText}>
+                    {busy ? '...' : 'Kaydet'}
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          ) : (
+            <>
+              <Text style={styles.value}>{displayName(profile)}</Text>
+              <Text style={styles.valueMuted}>@{profile.username || '—'}</Text>
+              <Pressable
+                onPress={() => {
+                  setFirstNameInput(profile.firstName);
+                  setLastNameInput(profile.lastName);
+                  setUsernameInput(profile.username);
+                  setEditingProfile(true);
+                }}
+                style={styles.inlineAction}
+              >
+                <Text style={styles.inlineActionText}>Profili düzenle</Text>
+              </Pressable>
+            </>
+          )}
 
-          <Text style={styles.label}>Kullanıcı adı</Text>
-          <Text style={styles.value}>{profile.username || '—'}</Text>
+          <Text style={styles.label}>Rol</Text>
+          <Text style={styles.value}>{roleLabel(profile.role)}</Text>
 
           <Text style={styles.label}>Telefon</Text>
           {editingPhone ? (
@@ -178,8 +264,8 @@ export function AccountScreen() {
         </View>
 
         <Text style={styles.note}>
-          1 telefon = 1 hesap ve 1 aktif rezervasyon. E-posta değişimi onay
-          maili ister.
+          Eski kayıtlarda kullanıcı adı telefona eşitlenmiş olabilir — buradan
+          değiştirebilirsin. 1 telefon = 1 hesap.
         </Text>
 
         <Pressable
@@ -241,6 +327,12 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodyBold,
     color: colors.ink,
     fontSize: 17,
+  },
+  valueMuted: {
+    marginTop: 2,
+    fontFamily: fonts.body,
+    color: colors.muted,
+    fontSize: 15,
   },
   editBlock: {
     marginTop: 6,

@@ -16,6 +16,7 @@ type BookingContextValue = {
   ready: boolean;
   courts: Court[];
   bookings: Booking[];
+  refreshCourts: () => Promise<void>;
   addCourt: (input: {
     name: string;
     district: string;
@@ -279,6 +280,7 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
       ready,
       courts,
       bookings,
+      refreshCourts: loadCoreData,
       addCourt,
       bookSlot,
       cancelBooking,
@@ -289,6 +291,7 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
       ready,
       courts,
       bookings,
+      loadCoreData,
       addCourt,
       bookSlot,
       cancelBooking,

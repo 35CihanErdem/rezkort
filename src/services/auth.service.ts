@@ -3,7 +3,9 @@ import type { AuthActionResult, SignInInput, SignUpInput } from '../types/auth';
 import { isValidEmail, normalizeEmail } from '../utils/email';
 import {
   isValidTrMobile,
+  isValidUsername,
   normalizePhone,
+  normalizeUsername,
   toE164TR,
 } from '../utils/phone';
 
@@ -91,10 +93,16 @@ export async function signUp(input: SignUpInput): Promise<AuthActionResult> {
   const phone = toE164TR(input.phone);
   const email = normalizeEmail(input.email);
   const password = input.password;
-  const username = phone.replace('+', '');
+  const username = normalizeUsername(input.username);
 
   if (!firstName || !lastName) {
     return { ok: false, reason: 'Ad ve soyad gerekli.' };
+  }
+  if (!isValidUsername(username)) {
+    return {
+      ok: false,
+      reason: 'Kullanıcı adı 3–24 karakter, harf/rakam/._ olmalı.',
+    };
   }
   if (!isValidTrMobile(normalizePhone(input.phone))) {
     return { ok: false, reason: 'Geçerli bir cep numarası gir (05xx...).' };

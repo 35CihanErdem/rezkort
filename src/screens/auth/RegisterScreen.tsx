@@ -23,6 +23,7 @@ export function RegisterScreen() {
   const { signUp } = useAuth();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [username, setUsername] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -42,6 +43,7 @@ export function RegisterScreen() {
       const result = await signUp({
         firstName,
         lastName,
+        username,
         phone,
         email,
         password,
@@ -101,6 +103,17 @@ export function RegisterScreen() {
               placeholder="Soyadın"
               placeholderTextColor={colors.muted}
               autoCapitalize="words"
+              style={authStyles.input}
+            />
+
+            <Text style={authStyles.label}>Kullanıcı adı</Text>
+            <TextInput
+              value={username}
+              onChangeText={setUsername}
+              placeholder="ornek.kullanici"
+              placeholderTextColor={colors.muted}
+              autoCapitalize="none"
+              autoCorrect={false}
               style={authStyles.input}
             />
 
