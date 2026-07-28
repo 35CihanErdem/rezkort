@@ -1,21 +1,3 @@
-export type User = {
-  id: string;
-  firstName: string;
-  lastName: string;
-  /** Ana kimlik: 1 telefon = 1 hesap (farklı e-posta ile tekrar kayıt yok) */
-  phone: string; // E.164: +905xxxxxxxxx
-  /** E-posta doğrulaması sonrası telefona bağlanır */
-  email: string;
-  username: string;
-  role: 'citizen' | 'staff' | 'admin' | 'super_admin';
-  phoneVerified: boolean;
-  emailVerified: boolean;
-  isActive: boolean;
-  lastLoginAt?: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
-
 export type Court = {
   id: string;
   facilityId?: string;
@@ -52,8 +34,8 @@ export type Booking = {
 export type AuthStackParamList = {
   Login: undefined;
   Register: undefined;
-  Otp: undefined;
-  SetPassword: undefined;
+  ForgotPassword: undefined;
+  ResetPassword: undefined;
 };
 
 export type RootStackParamList = {
@@ -67,3 +49,6 @@ export type MainTabParamList = {
   Account: undefined;
   Admin: undefined;
 };
+
+/** @deprecated Profile tipi src/types/profile.ts içinde */
+export type { Profile as User } from './types/profile';

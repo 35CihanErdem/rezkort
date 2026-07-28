@@ -1,38 +1,185 @@
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import {
+  Alert,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { Screen } from '../components/Screen';
-import { displayName, useAuth } from '../store/AuthContext';
+import { displayName, useAuth } from '../context/AuthContext';
 import { colors, fonts, radii, spacing } from '../theme';
 import { formatPhoneDisplay } from '../utils/phone';
 
 export function AccountScreen() {
-  const { user, logout } = useAuth();
+  const {
+    profile,
+    signOut,
+    updateEmail,
+    updatePhone,
+  } = useAuth();
 
-  if (!user) return null;
+  const [editingPhone, setEditingPhone] = useState(false);
+  const [editingEmail, setEditingEmail] = useState(false);
+  const [phoneInput, setPhoneInput] = useState('');
+  const [emailInput, setEmailInput] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  if (!profile) return null;
+
+  async function onSavePhone() {
+    setBusy(true);
+    try {
+      const result = await updatePhone(phoneInput);
+      if (!result.ok) {
+        Alert.alert('Telefon güncellenemedi', result.reason);
+        return;
+      }
+      setEditingPhone(false);
+      Alert.alert(
+        'Telefon güncellendi',
+        'SMS doğrulaması henüz yok; ileride eklenecek.',
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onSaveEmail() {
+    setBusy(true);
+    try {
+      const result = await updateEmail(emailInput);
+      if (!result.ok) {
+        Alert.alert('E-posta değiştirilemedi', result.reason);
+        return;
+      }
+      setEditingEmail(false);
+      Alert.alert(
+        'Doğrulama gerekli',
+        result.message ??
+          'Yeni e-postana onay maili gitti. Onaylamadan değişmez.',
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
     <Screen>
-      <View style={[styles.screen, { paddingTop: spacing.md }]}>
+      <ScrollView
+        style={styles.screen}
+        contentContainerStyle={{ paddingTop: spacing.md, paddingBottom: spacing.xl }}
+        keyboardShouldPersistTaps="handled"
+      >
         <Text style={styles.brand}>Hesap</Text>
         <Text style={styles.subtitle}>
-          Ana kimlik telefon · e-posta bu numaraya bağlı
+          Supabase Auth · e-posta doğrulamalı hesap
         </Text>
 
         <View style={styles.card}>
           <Text style={styles.label}>Ad soyad</Text>
-          <Text style={styles.value}>{displayName(user)}</Text>
-
-          <Text style={styles.label}>Telefon (ana)</Text>
-          <Text style={styles.value}>{formatPhoneDisplay(user.phone)}</Text>
-
-          <Text style={styles.label}>Bağlı e-posta</Text>
-          <Text style={styles.value}>{user.email}</Text>
+          <Text style={styles.value}>{displayName(profile)}</Text>
 
           <Text style={styles.label}>Kullanıcı adı</Text>
-          <Text style={styles.value}>{user.username}</Text>
+          <Text style={styles.value}>{profile.username || '—'}</Text>
+
+          <Text style={styles.label}>Telefon</Text>
+          {editingPhone ? (
+            <View style={styles.editBlock}>
+              <TextInput
+                value={phoneInput}
+                onChangeText={setPhoneInput}
+                placeholder="05xx xxx xx xx"
+                placeholderTextColor={colors.muted}
+                keyboardType="phone-pad"
+                style={styles.input}
+              />
+              <View style={styles.editActions}>
+                <Pressable
+                  onPress={() => setEditingPhone(false)}
+                  style={styles.secondaryBtn}
+                >
+                  <Text style={styles.secondaryBtnText}>Vazgeç</Text>
+                </Pressable>
+                <Pressable
+                  onPress={onSavePhone}
+                  disabled={busy}
+                  style={styles.primaryBtn}
+                >
+                  <Text style={styles.primaryBtnText}>
+                    {busy ? '...' : 'Kaydet'}
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          ) : (
+            <>
+              <Text style={styles.value}>
+                {formatPhoneDisplay(profile.phone)}
+              </Text>
+              <Pressable
+                onPress={() => {
+                  setPhoneInput(profile.phone);
+                  setEditingPhone(true);
+                }}
+                style={styles.inlineAction}
+              >
+                <Text style={styles.inlineActionText}>Telefonu değiştir</Text>
+              </Pressable>
+            </>
+          )}
+
+          <Text style={styles.label}>E-posta</Text>
+          {editingEmail ? (
+            <View style={styles.editBlock}>
+              <TextInput
+                value={emailInput}
+                onChangeText={setEmailInput}
+                placeholder="yeni@mail.com"
+                placeholderTextColor={colors.muted}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                style={styles.input}
+              />
+              <View style={styles.editActions}>
+                <Pressable
+                  onPress={() => setEditingEmail(false)}
+                  style={styles.secondaryBtn}
+                >
+                  <Text style={styles.secondaryBtnText}>Vazgeç</Text>
+                </Pressable>
+                <Pressable
+                  onPress={onSaveEmail}
+                  disabled={busy}
+                  style={styles.primaryBtn}
+                >
+                  <Text style={styles.primaryBtnText}>
+                    {busy ? '...' : 'Gönder'}
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          ) : (
+            <>
+              <Text style={styles.value}>{profile.email}</Text>
+              <Pressable
+                onPress={() => {
+                  setEmailInput(profile.email);
+                  setEditingEmail(true);
+                }}
+                style={styles.inlineAction}
+              >
+                <Text style={styles.inlineActionText}>E-postayı değiştir</Text>
+              </Pressable>
+            </>
+          )}
         </View>
 
         <Text style={styles.note}>
-          1 telefon = 1 hesap ve 1 aktif rezervasyon.
+          1 telefon = 1 hesap ve 1 aktif rezervasyon. E-posta değişimi onay
+          maili ister.
         </Text>
 
         <Pressable
@@ -42,7 +189,9 @@ export function AccountScreen() {
               {
                 text: 'Çıkış yap',
                 style: 'destructive',
-                onPress: () => logout(),
+                onPress: () => {
+                  void signOut();
+                },
               },
             ])
           }
@@ -50,7 +199,7 @@ export function AccountScreen() {
         >
           <Text style={styles.logoutText}>Çıkış yap</Text>
         </Pressable>
-      </View>
+      </ScrollView>
     </Screen>
   );
 }
@@ -92,6 +241,58 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodyBold,
     color: colors.ink,
     fontSize: 17,
+  },
+  editBlock: {
+    marginTop: 6,
+    gap: 8,
+  },
+  input: {
+    backgroundColor: colors.bg,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderRadius: radii.md,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontFamily: fonts.body,
+    color: colors.ink,
+    fontSize: 16,
+  },
+  editActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  primaryBtn: {
+    flex: 1,
+    backgroundColor: colors.courtDeep,
+    borderRadius: radii.sm,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  primaryBtnText: {
+    fontFamily: fonts.bodyBold,
+    color: colors.white,
+  },
+  secondaryBtn: {
+    flex: 1,
+    backgroundColor: colors.bg,
+    borderRadius: radii.sm,
+    borderWidth: 1,
+    borderColor: colors.line,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  secondaryBtnText: {
+    fontFamily: fonts.bodyMedium,
+    color: colors.muted,
+  },
+  inlineAction: {
+    marginTop: 6,
+    alignSelf: 'flex-start',
+  },
+  inlineActionText: {
+    fontFamily: fonts.bodyBold,
+    color: colors.courtDeep,
+    fontSize: 13,
   },
   note: {
     marginTop: spacing.lg,

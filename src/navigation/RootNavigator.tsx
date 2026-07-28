@@ -1,18 +1,20 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import * as Linking from 'expo-linking';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAuth } from '../context/AuthContext';
+import { AUTH_REDIRECT_SCHEME } from '../lib/supabase';
 import { AccountScreen } from '../screens/AccountScreen';
 import { AdminScreen } from '../screens/AdminScreen';
 import { CourtDetailScreen } from '../screens/CourtDetailScreen';
 import { CourtsScreen } from '../screens/CourtsScreen';
 import { MyBookingsScreen } from '../screens/MyBookingsScreen';
+import { ForgotPasswordScreen } from '../screens/auth/ForgotPasswordScreen';
 import { LoginScreen } from '../screens/auth/LoginScreen';
-import { OtpScreen } from '../screens/auth/OtpScreen';
 import { RegisterScreen } from '../screens/auth/RegisterScreen';
-import { SetPasswordScreen } from '../screens/auth/SetPasswordScreen';
-import { useAuth } from '../store/AuthContext';
+import { ResetPasswordScreen } from '../screens/auth/ResetPasswordScreen';
 import { colors, fonts } from '../theme';
 import {
   AuthStackParamList,
@@ -98,12 +100,18 @@ function MainTabs() {
 }
 
 function AuthNavigator() {
+  const { passwordRecovery } = useAuth();
+
   return (
-    <AuthStack.Navigator screenOptions={{ headerShown: false }}>
+    <AuthStack.Navigator
+      key={passwordRecovery ? 'recovery' : 'auth'}
+      screenOptions={{ headerShown: false }}
+      initialRouteName={passwordRecovery ? 'ResetPassword' : 'Login'}
+    >
       <AuthStack.Screen name="Login" component={LoginScreen} />
       <AuthStack.Screen name="Register" component={RegisterScreen} />
-      <AuthStack.Screen name="Otp" component={OtpScreen} />
-      <AuthStack.Screen name="SetPassword" component={SetPasswordScreen} />
+      <AuthStack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+      <AuthStack.Screen name="ResetPassword" component={ResetPasswordScreen} />
     </AuthStack.Navigator>
   );
 }
@@ -119,23 +127,27 @@ function AppNavigator() {
       <AppStack.Screen
         name="CourtDetail"
         component={CourtDetailScreen}
-          options={{
-            title: 'Rezervasyon',
-            headerTintColor: colors.courtDeep,
-            headerTitleStyle: { fontFamily: fonts.bodyBold },
-            headerStyle: { backgroundColor: colors.bg },
-            headerShadowVisible: false,
-            contentStyle: { backgroundColor: colors.bg },
-          }}
+        options={{
+          title: 'Rezervasyon',
+          headerTintColor: colors.courtDeep,
+          headerTitleStyle: { fontFamily: fonts.bodyBold },
+          headerStyle: { backgroundColor: colors.bg },
+          headerShadowVisible: false,
+          contentStyle: { backgroundColor: colors.bg },
+        }}
       />
     </AppStack.Navigator>
   );
 }
 
-export function RootNavigator() {
-  const { ready, user } = useAuth();
+const linking = {
+  prefixes: [Linking.createURL('/'), `${AUTH_REDIRECT_SCHEME}://`],
+};
 
-  if (!ready) {
+export function RootNavigator() {
+  const { loading, profile, session, passwordRecovery } = useAuth();
+
+  if (loading) {
     return (
       <View style={styles.boot}>
         <ActivityIndicator size="large" color={colors.court} />
@@ -143,9 +155,11 @@ export function RootNavigator() {
     );
   }
 
+  const isAuthed = Boolean(session && profile) && !passwordRecovery;
+
   return (
-    <NavigationContainer>
-      {user ? <AppNavigator /> : <AuthNavigator />}
+    <NavigationContainer linking={linking}>
+      {isAuthed ? <AppNavigator /> : <AuthNavigator />}
     </NavigationContainer>
   );
 }

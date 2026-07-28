@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import { Screen } from '../components/Screen';
-import { displayName, useAuth } from '../store/AuthContext';
+import { displayName, useAuth } from '../context/AuthContext';
 import { useBooking } from '../store/BookingContext';
 import { colors, fonts, radii, spacing } from '../theme';
 import { RootStackParamList } from '../types';
@@ -17,7 +17,7 @@ import { formatDateLabel, formatSlot, nextDays } from '../utils/date';
 
 export function CourtDetailScreen() {
   const route = useRoute<RouteProp<RootStackParamList, 'CourtDetail'>>();
-  const { user } = useAuth();
+  const { profile } = useAuth();
   const {
     courts,
     bookSlot,
@@ -41,7 +41,7 @@ export function CourtDetailScreen() {
     );
   }
 
-  if (!user) {
+  if (!profile) {
     return (
       <Screen edges={['bottom', 'left', 'right']}>
         <Text style={styles.missing}>Rezervasyon için giriş yap.</Text>
@@ -49,7 +49,7 @@ export function CourtDetailScreen() {
     );
   }
 
-  const currentUser = user;
+  const currentUser = profile;
   const selectedCourt = court;
   const playerName = displayName(currentUser);
   const activeBooking = getActiveBookingForPhone(currentUser.phone);

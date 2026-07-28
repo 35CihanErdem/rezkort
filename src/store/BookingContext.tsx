@@ -6,8 +6,8 @@ import React, {
   useMemo,
   useState,
 } from 'react';
-import { useAuth } from './AuthContext';
-import { supabase } from '../supabase/supabase';
+import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 import { Booking, Court } from '../types';
 import { isBookingActive } from '../utils/booking';
 import { toDateKey } from '../utils/date';
@@ -45,7 +45,7 @@ type BookingContextValue = {
 const BookingContext = createContext<BookingContextValue | null>(null);
 
 export function BookingProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
+  const { profile } = useAuth();
   const [ready, setReady] = useState(false);
   const [courts, setCourts] = useState<Court[]>([]);
   const [slotReservations, setSlotReservations] = useState<Booking[]>([]);
@@ -124,7 +124,7 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
   }, [mapBooking, mapCourt]);
 
   const loadUserBookings = useCallback(async () => {
-    if (!user) {
+    if (!profile) {
       setBookings([]);
       return;
     }
@@ -133,13 +133,13 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
       .select(
         'id,court_id,user_id,phone,date,start_hour,end_hour,status,reservation_source,checked_in,notes,cancelled_at,completed_at,created_at,updated_at,profiles(first_name,last_name)',
       )
-      .eq('user_id', user.id)
+      .eq('user_id', profile.id)
       .order('date', { ascending: false })
       .order('start_hour', { ascending: false });
 
     if (error) throw error;
     setBookings((data ?? []).map(mapBooking));
-  }, [mapBooking, user]);
+  }, [mapBooking, profile]);
 
   useEffect(() => {
     let alive = true;

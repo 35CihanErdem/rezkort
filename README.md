@@ -1,28 +1,45 @@
 # RezKort
 
-İzmir tenis kortları için iOS + Android randevu uygulaması (Expo / React Native).
+İzmir tenis kortları için iOS + Android randevu uygulaması (Expo SDK 54 / React Native + Supabase).
 
 ## Ne yapıyor?
 
-- Telefon + e-posta ile kayıt: ad + soyad + e-posta doğrulama kodu + şifre
+- **Supabase Auth** ile kayıt (ad, soyad, telefon, e-posta, şifre)
+- E-posta doğrulaması zorunlu (Confirm email)
 - Giriş: e-posta / telefon / kullanıcı adı + şifre
-- Kortları listele (Bostanlı, Buca, Bornova Aşık Veysel)
-- Gün ve saat seç, boş/dolu gör, rezerve et
-- **1 telefon = 1 aktif rezervasyon**
-- Admin sekmesinden yeni kort ekle
+- Şifremi unuttum (Supabase reset maili)
+- Hesaptan e-posta / telefon güncelleme
+- Kort listesi, rezervasyon, iptal
+- **1 telefon = 1 aktif rezervasyon** (RPC)
 
-> E-posta kodu: EmailJS anahtarları yoksa simülasyon (Alert). Gerçek gönderim için `EXPO_PUBLIC_EMAILJS_*` ekle (`src/services/email.ts`).
+## Ortam
+
+`.env`:
+
+```bash
+EXPO_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_anon_or_publishable_key
+```
+
+Supabase Dashboard:
+
+- Authentication → Providers → Email → **Confirm email: ON**
+- Authentication → URL Configuration → Redirect URLs: `rezkort://**`
 
 ## Çalıştır
-
-Proje **Expo SDK 54** kullanır (Play Store Expo Go ile uyumlu).
 
 ```bash
 npm start
 ```
 
-Sonra Expo Go ile QR okut (Android) veya `i` / `a` ile simülatör.
+## Yapı
 
-## Not
-
-Veriler şimdilik telefonda AsyncStorage ile tutuluyor. Ortak gerçek zamanlı randevu için sonra backend/veritabanı bağlanacak.
+```
+src/
+  lib/supabase.ts
+  services/auth.service.ts
+  services/profile.service.ts
+  context/AuthContext.tsx
+  types/auth.ts
+  types/profile.ts
+```

@@ -12,47 +12,54 @@ import {
   View,
 } from 'react-native';
 import { Screen } from '../../components/Screen';
-import { useAuth } from '../../store/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import { colors, spacing } from '../../theme';
 import { AuthStackParamList } from '../../types';
-import { normalizeEmail } from '../../utils/email';
 import { authStyles } from './authStyles';
 
 export function RegisterScreen() {
   const navigation =
     useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
-  const { startRegister } = useAuth();
+  const { signUp } = useAuth();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   async function onSubmit() {
     setError('');
-    setLoading(true);
-    const result = await startRegister({ firstName, lastName, phone, email });
-    setLoading(false);
-
-    if (!result.ok) {
-      setError(result.reason);
+    if (password !== confirm) {
+      setError('Şifreler eşleşmiyor.');
       return;
     }
 
-    if (result.demoCode) {
-      Alert.alert(
-        'E-posta simülasyonu',
-        `${normalizeEmail(email)} adresine kod:\n\n${result.demoCode}`,
-      );
-    } else {
-      Alert.alert(
-        'Kod gönderildi',
-        `${normalizeEmail(email)} adresine doğrulama kodu gönderildi.`,
-      );
-    }
+    setLoading(true);
+    try {
+      const result = await signUp({
+        firstName,
+        lastName,
+        phone,
+        email,
+        password,
+      });
+      if (!result.ok) {
+        setError(result.reason);
+        return;
+      }
 
-    navigation.navigate('Otp');
+      Alert.alert(
+        'E-postanı doğrula',
+        result.message ??
+          'Doğrulama linki gönderildi. Onayladıktan sonra giriş yap.',
+        [{ text: 'Girişe dön', onPress: () => navigation.navigate('Login') }],
+      );
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -74,7 +81,7 @@ export function RegisterScreen() {
           <View style={authStyles.panel}>
             <Text style={authStyles.title}>Kayıt ol</Text>
             <Text style={authStyles.subtitle}>
-              Ana kimlik telefon: 1 numara = 1 hesap. E-posta doğrulama için.
+              1 telefon = 1 hesap. E-posta doğrulaması zorunlu (Supabase Auth).
             </Text>
 
             <Text style={authStyles.label}>Ad</Text>
@@ -97,7 +104,7 @@ export function RegisterScreen() {
               style={authStyles.input}
             />
 
-            <Text style={authStyles.label}>Telefon (ana kimlik)</Text>
+            <Text style={authStyles.label}>Telefon</Text>
             <TextInput
               value={phone}
               onChangeText={setPhone}
@@ -107,7 +114,7 @@ export function RegisterScreen() {
               style={authStyles.input}
             />
 
-            <Text style={authStyles.label}>E-posta (doğrulama)</Text>
+            <Text style={authStyles.label}>E-posta</Text>
             <TextInput
               value={email}
               onChangeText={setEmail}
@@ -116,6 +123,26 @@ export function RegisterScreen() {
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
+              style={authStyles.input}
+            />
+
+            <Text style={authStyles.label}>Şifre</Text>
+            <TextInput
+              value={password}
+              onChangeText={setPassword}
+              placeholder="En az 6 karakter"
+              placeholderTextColor={colors.muted}
+              secureTextEntry
+              style={authStyles.input}
+            />
+
+            <Text style={authStyles.label}>Şifre tekrar</Text>
+            <TextInput
+              value={confirm}
+              onChangeText={setConfirm}
+              placeholder="Şifreni tekrar yaz"
+              placeholderTextColor={colors.muted}
+              secureTextEntry
               style={authStyles.input}
             />
 
@@ -130,7 +157,7 @@ export function RegisterScreen() {
               ]}
             >
               <Text style={authStyles.ctaText}>
-                {loading ? 'Kod gönderiliyor...' : 'E-posta kodu gönder'}
+                {loading ? 'Hesap oluşturuluyor...' : 'Kayıt ol'}
               </Text>
             </Pressable>
 

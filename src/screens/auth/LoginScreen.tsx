@@ -2,6 +2,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useState } from 'react';
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -11,7 +12,7 @@ import {
   View,
 } from 'react-native';
 import { Screen } from '../../components/Screen';
-import { useAuth } from '../../store/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import { colors, spacing } from '../../theme';
 import { AuthStackParamList } from '../../types';
 import { authStyles } from './authStyles';
@@ -19,7 +20,7 @@ import { authStyles } from './authStyles';
 export function LoginScreen() {
   const navigation =
     useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
-  const { login } = useAuth();
+  const { signIn } = useAuth();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -28,9 +29,12 @@ export function LoginScreen() {
   async function onSubmit() {
     setError('');
     setLoading(true);
-    const result = await login({ identifier, password });
-    setLoading(false);
-    if (!result.ok) setError(result.reason);
+    try {
+      const result = await signIn({ identifier, password });
+      if (!result.ok) setError(result.reason);
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -54,16 +58,18 @@ export function LoginScreen() {
           <View style={authStyles.panel}>
             <Text style={authStyles.title}>Giriş yap</Text>
             <Text style={authStyles.subtitle}>
-              En kolayı: kayıtlı e-posta + şifre. Telefon da olur.
+              E-posta, telefon veya kullanıcı adı + şifre. E-posta doğrulanmış
+              olmalı.
             </Text>
 
-            <Text style={authStyles.label}>E-posta (önerilir) / telefon / kullanıcı adı</Text>
+            <Text style={authStyles.label}>E-posta / telefon / kullanıcı adı</Text>
             <TextInput
               value={identifier}
               onChangeText={setIdentifier}
-              placeholder="05xx... veya mail@..."
+              placeholder="mail@... veya 05xx..."
               placeholderTextColor={colors.muted}
               autoCapitalize="none"
+              autoCorrect={false}
               style={authStyles.input}
             />
 
@@ -91,6 +97,12 @@ export function LoginScreen() {
                 {loading ? 'Giriş yapılıyor...' : 'Giriş yap'}
               </Text>
             </Pressable>
+
+            <View style={authStyles.linkRow}>
+              <Pressable onPress={() => navigation.navigate('ForgotPassword')}>
+                <Text style={authStyles.link}>Şifremi Unuttum</Text>
+              </Pressable>
+            </View>
 
             <View style={authStyles.linkRow}>
               <Text style={authStyles.linkMuted}>Hesabın yok mu?</Text>

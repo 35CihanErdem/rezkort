@@ -1,6 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -12,50 +12,37 @@ import {
   View,
 } from 'react-native';
 import { Screen } from '../../components/Screen';
-import { useAuth } from '../../store/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import { colors, spacing } from '../../theme';
 import { AuthStackParamList } from '../../types';
 import { authStyles } from './authStyles';
 
-export function OtpScreen() {
+export function ForgotPasswordScreen() {
   const navigation =
     useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
-  const { pending, verifyOtp, resendOtp } = useAuth();
-  const [code, setCode] = useState('');
+  const { resetPassword } = useAuth();
+  const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (!pending) navigation.replace('Register');
-  }, [pending, navigation]);
-
-  function onVerify() {
+  async function onSubmit() {
     setError('');
-    const result = verifyOtp(code);
-    if (!result.ok) {
-      setError(result.reason);
-      return;
-    }
-    navigation.navigate('SetPassword');
-  }
-
-  async function onResend() {
     setLoading(true);
-    setError('');
-    const result = await resendOtp();
-    setLoading(false);
-    if (!result.ok) {
-      setError(result.reason);
-      return;
-    }
-    if (result.demoCode) {
-      Alert.alert('Yeni kod', `Doğrulama kodu: ${result.demoCode}`);
-    } else {
-      Alert.alert('Gönderildi', 'Yeni kod e-postana gönderildi.');
+    try {
+      const result = await resetPassword(email);
+      if (!result.ok) {
+        setError(result.reason);
+        return;
+      }
+      Alert.alert(
+        'Mail gönderildi',
+        result.message ?? 'Şifre sıfırlama linki e-postanda.',
+        [{ text: 'Tamam', onPress: () => navigation.navigate('Login') }],
+      );
+    } finally {
+      setLoading(false);
     }
   }
-
-  if (!pending) return null;
 
   return (
     <Screen variant="hero">
@@ -71,43 +58,44 @@ export function OtpScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <Text style={authStyles.brand}>RezKort</Text>
-          <Text style={authStyles.heroTag}>E-posta doğrulama</Text>
+          <Text style={authStyles.heroTag}>Şifre sıfırlama</Text>
 
           <View style={authStyles.panel}>
-            <Text style={authStyles.title}>Kodu gir</Text>
+            <Text style={authStyles.title}>Şifremi unuttum</Text>
             <Text style={authStyles.subtitle}>
-              {pending.email} adresine gelen 6 haneli kodu yaz.
+              Kayıtlı e-posta adresini yaz. Supabase sıfırlama maili gönderecek.
             </Text>
 
-            <Text style={authStyles.label}>Doğrulama kodu</Text>
+            <Text style={authStyles.label}>E-posta</Text>
             <TextInput
-              value={code}
-              onChangeText={setCode}
-              placeholder="******"
+              value={email}
+              onChangeText={setEmail}
+              placeholder="ornek@mail.com"
               placeholderTextColor={colors.muted}
-              keyboardType="number-pad"
-              maxLength={6}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
               style={authStyles.input}
             />
 
             {error ? <Text style={authStyles.error}>{error}</Text> : null}
 
             <Pressable
-              onPress={onVerify}
+              onPress={onSubmit}
+              disabled={loading}
               style={({ pressed }) => [
                 authStyles.cta,
-                pressed && { opacity: 0.88 },
+                (pressed || loading) && { opacity: 0.88 },
               ]}
             >
-              <Text style={authStyles.ctaText}>Doğrula</Text>
+              <Text style={authStyles.ctaText}>
+                {loading ? 'Gönderiliyor...' : 'Sıfırlama linki gönder'}
+              </Text>
             </Pressable>
 
             <View style={authStyles.linkRow}>
-              <Text style={authStyles.linkMuted}>Kod gelmedi mi?</Text>
-              <Pressable onPress={onResend} disabled={loading}>
-                <Text style={authStyles.link}>
-                  {loading ? 'Gönderiliyor...' : 'Tekrar gönder'}
-                </Text>
+              <Pressable onPress={() => navigation.navigate('Login')}>
+                <Text style={authStyles.link}>Girişe dön</Text>
               </Pressable>
             </View>
           </View>

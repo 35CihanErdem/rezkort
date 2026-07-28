@@ -1,7 +1,8 @@
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -11,29 +12,19 @@ import {
   View,
 } from 'react-native';
 import { Screen } from '../../components/Screen';
-import { useAuth } from '../../store/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import { colors, spacing } from '../../theme';
 import { AuthStackParamList } from '../../types';
-import { formatPhoneDisplay } from '../../utils/phone';
 import { authStyles } from './authStyles';
 
-export function SetPasswordScreen() {
+export function ResetPasswordScreen() {
   const navigation =
     useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
-  const { pending, completeRegister } = useAuth();
-  const [username, setUsername] = useState('');
+  const { updatePassword, signOut, clearPasswordRecovery } = useAuth();
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (!pending?.emailVerified) {
-      navigation.replace(pending ? 'Otp' : 'Register');
-    } else if (pending && !username) {
-      setUsername(pending.phone.replace('+', ''));
-    }
-  }, [pending, navigation, username]);
 
   async function onSubmit() {
     setError('');
@@ -44,16 +35,20 @@ export function SetPasswordScreen() {
 
     setLoading(true);
     try {
-      const result = await completeRegister({ username, password });
-      if (!result.ok) setError(result.reason);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Kayıt tamamlanamadı.');
+      const result = await updatePassword(password);
+      if (!result.ok) {
+        setError(result.reason);
+        return;
+      }
+      clearPasswordRecovery();
+      await signOut();
+      Alert.alert('Şifre güncellendi', 'Yeni şifrenle giriş yap.', [
+        { text: 'Tamam', onPress: () => navigation.navigate('Login') },
+      ]);
     } finally {
       setLoading(false);
     }
   }
-
-  if (!pending?.emailVerified) return null;
 
   return (
     <Screen variant="hero">
@@ -69,25 +64,15 @@ export function SetPasswordScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <Text style={authStyles.brand}>RezKort</Text>
-          <Text style={authStyles.heroTag}>Son adım</Text>
+          <Text style={authStyles.heroTag}>Yeni şifre</Text>
 
           <View style={authStyles.panel}>
-            <Text style={authStyles.title}>Şifre belirle</Text>
+            <Text style={authStyles.title}>Şifreni yenile</Text>
             <Text style={authStyles.subtitle}>
-              {pending.email} → {formatPhoneDisplay(pending.phone)} bağlanacak.
+              Maildeki linkten geldiysen yeni şifreni belirle.
             </Text>
 
-            <Text style={authStyles.label}>Kullanıcı adı</Text>
-            <TextInput
-              value={username}
-              onChangeText={setUsername}
-              placeholder="ornek.oyuncu"
-              placeholderTextColor={colors.muted}
-              autoCapitalize="none"
-              style={authStyles.input}
-            />
-
-            <Text style={authStyles.label}>Şifre</Text>
+            <Text style={authStyles.label}>Yeni şifre</Text>
             <TextInput
               value={password}
               onChangeText={setPassword}
@@ -118,7 +103,7 @@ export function SetPasswordScreen() {
               ]}
             >
               <Text style={authStyles.ctaText}>
-                {loading ? 'Hesap oluşturuluyor...' : 'Hesabı oluştur'}
+                {loading ? 'Kaydediliyor...' : 'Şifreyi kaydet'}
               </Text>
             </Pressable>
           </View>

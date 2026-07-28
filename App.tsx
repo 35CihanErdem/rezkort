@@ -11,16 +11,16 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { RootNavigator } from './src/navigation/RootNavigator';
-import { AuthProvider, useAuth } from './src/store/AuthContext';
 import { BookingProvider, useBooking } from './src/store/BookingContext';
 import { colors } from './src/theme';
 
 function AppReady() {
-  const { ready: authReady } = useAuth();
+  const { loading: authLoading } = useAuth();
   const { ready: bookingReady } = useBooking();
 
-  if (!authReady || !bookingReady) {
+  if (authLoading || !bookingReady) {
     return (
       <View style={styles.boot}>
         <ActivityIndicator size="large" color={colors.court} />

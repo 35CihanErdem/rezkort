@@ -8,7 +8,7 @@ import {
   View,
 } from 'react-native';
 import { Screen } from '../components/Screen';
-import { useAuth } from '../store/AuthContext';
+import { useAuth } from '../context/AuthContext';
 import { useBooking } from '../store/BookingContext';
 import { colors, fonts, radii, spacing } from '../theme';
 import { Booking } from '../types';
@@ -18,14 +18,14 @@ import { formatDateLabel, formatSlot } from '../utils/date';
 type Tab = 'active' | 'past';
 
 export function MyBookingsScreen() {
-  const { user } = useAuth();
+  const { profile } = useAuth();
   const { bookings, courts, cancelBooking } = useBooking();
   const [tab, setTab] = useState<Tab>('active');
   const [cancellingId, setCancellingId] = useState<string | null>(null);
 
   const mine = useMemo(
-    () => bookings.filter((b) => b.userId === user?.id),
-    [bookings, user?.id],
+    () => bookings.filter((b) => b.userId === profile?.id),
+    [bookings, profile?.id],
   );
 
   const active = useMemo(

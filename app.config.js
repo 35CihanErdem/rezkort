@@ -7,9 +7,9 @@ module.exports = {
   version: '1.0.1',
   orientation: 'portrait',
   icon: './assets/icon.png',
+  scheme: 'rezkort',
   userInterfaceStyle: 'light',
   plugins: ['expo-font'],
-  // OTA kapalı: APK kendi içindeki bundle ile açılır (Failed to download remote update olmaz)
   updates: {
     enabled: false,
     checkAutomatically: 'NEVER',
@@ -31,6 +31,18 @@ module.exports = {
       foregroundImage: './assets/android-icon-foreground.png',
     },
     predictiveBackGestureEnabled: false,
+    intentFilters: [
+      {
+        action: 'VIEW',
+        autoVerify: true,
+        data: [
+          {
+            scheme: 'rezkort',
+          },
+        ],
+        category: ['BROWSABLE', 'DEFAULT'],
+      },
+    ],
   },
   web: {
     favicon: './assets/favicon.png',
@@ -41,11 +53,5 @@ module.exports = {
     },
     supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL ?? '',
     supabaseKey: process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? '',
-    emailjs: {
-      serviceId: process.env.EXPO_PUBLIC_EMAILJS_SERVICE_ID ?? '',
-      templateId: process.env.EXPO_PUBLIC_EMAILJS_TEMPLATE_ID ?? '',
-      publicKey: process.env.EXPO_PUBLIC_EMAILJS_PUBLIC_KEY ?? '',
-      privateKey: process.env.EXPO_PUBLIC_EMAILJS_PRIVATE_KEY ?? '',
-    },
   },
 };
