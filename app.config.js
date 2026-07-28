@@ -15,6 +15,7 @@ module.exports = {
   },
   android: {
     package: 'com.rezkort.app',
+    versionCode: 1,
     adaptiveIcon: {
       backgroundColor: '#145C39',
       foregroundImage: './assets/android-icon-foreground.png',

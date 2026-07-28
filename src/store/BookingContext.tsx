@@ -9,16 +9,11 @@ import React, {
 } from 'react';
 import { SEED_COURTS } from '../data/seed';
 import { Booking, Court } from '../types';
+import { isBookingActive } from '../utils/booking';
 import { createId, toDateKey } from '../utils/date';
 
 const COURTS_KEY = 'tenis.courts.v1';
 const BOOKINGS_KEY = 'tenis.bookings.v2';
-
-function isBookingActive(booking: Booking, now = new Date()): boolean {
-  const [y, m, d] = booking.date.split('-').map(Number);
-  const end = new Date(y, m - 1, d, booking.hour + 1, 0, 0, 0);
-  return end.getTime() > now.getTime();
-}
 
 type BookingContextValue = {
   ready: boolean;
