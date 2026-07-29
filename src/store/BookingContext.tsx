@@ -70,6 +70,8 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
       name: row.name,
       district: facility.district ?? '',
       address: facility.address ?? '',
+      latitude: facility.latitude ?? null,
+      longitude: facility.longitude ?? null,
       municipalityName: municipality.name ?? '',
       surfaceType: row.surface_type,
       hasLights: row.has_lights,
@@ -113,7 +115,7 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
       supabase
         .from('courts')
         .select(
-          'id,facility_id,name,surface_type,has_lights,status,open_hour,close_hour,facilities!inner(district,address,municipality_id,municipalities!inner(id,name))',
+          'id,facility_id,name,surface_type,has_lights,status,open_hour,close_hour,facilities!inner(district,address,latitude,longitude,municipality_id,municipalities!inner(id,name))',
         )
         .eq('status', 'active')
         .order('name', { ascending: true }),

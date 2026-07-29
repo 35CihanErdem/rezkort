@@ -5,6 +5,8 @@ export type Court = {
   name: string;
   district: string;
   address: string;
+  latitude?: number | null;
+  longitude?: number | null;
   municipalityName?: string;
   surfaceType?: 'hard' | 'clay' | 'acrylic';
   hasLights?: boolean;

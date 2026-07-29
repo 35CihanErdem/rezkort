@@ -18,6 +18,7 @@ import { colors, fonts, radii, spacing } from '../theme';
 import { RootStackParamList } from '../types';
 import { isSlotJoinable } from '../utils/booking';
 import { formatDateLabel, formatSlot, nextDays } from '../utils/date';
+import { hasCoordinates, promptOpenInMaps } from '../utils/maps';
 
 export function CourtDetailScreen() {
   const route = useRoute<RouteProp<RootStackParamList, 'CourtDetail'>>();
@@ -152,6 +153,25 @@ export function CourtDetailScreen() {
         <Text style={styles.district}>{selectedCourt.district}</Text>
         <Text style={styles.title}>{selectedCourt.name}</Text>
         <Text style={styles.address}>{selectedCourt.address}</Text>
+        {hasCoordinates({
+          latitude: selectedCourt.latitude ?? undefined,
+          longitude: selectedCourt.longitude ?? undefined,
+          label: selectedCourt.name,
+        }) ? (
+          <Pressable
+            onPress={() =>
+              promptOpenInMaps({
+                latitude: selectedCourt.latitude!,
+                longitude: selectedCourt.longitude!,
+                label: selectedCourt.name,
+                address: selectedCourt.address,
+              })
+            }
+            style={styles.directionsBtn}
+          >
+            <Text style={styles.directionsText}>🗺 Yol tarifi / Haritada aç</Text>
+          </Pressable>
+        ) : null}
 
         {activeBooking ? (
           <View style={styles.warn}>
@@ -324,6 +344,21 @@ const styles = StyleSheet.create({
     fontFamily: fonts.body,
     color: colors.muted,
     lineHeight: 20,
+  },
+  directionsBtn: {
+    marginTop: spacing.sm,
+    alignSelf: 'flex-start',
+    backgroundColor: colors.surface,
+    borderRadius: radii.sm,
+    borderWidth: 1,
+    borderColor: colors.line,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  directionsText: {
+    fontFamily: fonts.bodyBold,
+    color: colors.courtDeep,
+    fontSize: 13,
   },
   warn: {
     marginTop: spacing.md,

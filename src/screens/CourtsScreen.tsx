@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import { CourtCard } from '../components/CourtCard';
+import { CourtsMap } from '../components/CourtsMap';
 import { Screen } from '../components/Screen';
 import { usePullToRefresh } from '../hooks/usePullToRefresh';
 import { useBooking } from '../store/BookingContext';
@@ -23,6 +24,7 @@ export function CourtsScreen() {
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [query, setQuery] = useState('');
   const [district, setDistrict] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   const { refreshControlProps } = usePullToRefresh(refreshAll);
 
   const districts = useMemo(
@@ -50,6 +52,41 @@ export function CourtsScreen() {
         <Text style={styles.subtitle}>
           Boş saati gör, tek dokunuşla rezerve et.
         </Text>
+
+        <View style={styles.modeRow}>
+          <Pressable
+            onPress={() => setViewMode('list')}
+            style={[styles.modeChip, viewMode === 'list' && styles.modeChipOn]}
+          >
+            <Text
+              style={[
+                styles.modeText,
+                viewMode === 'list' && styles.modeTextOn,
+              ]}
+            >
+              Liste
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => setViewMode('map')}
+            style={[styles.modeChip, viewMode === 'map' && styles.modeChipOn]}
+          >
+            <Text
+              style={[
+                styles.modeText,
+                viewMode === 'map' && styles.modeTextOn,
+              ]}
+            >
+              Harita
+            </Text>
+          </Pressable>
+        </View>
+
+        {viewMode === 'map' ? (
+          <View style={styles.mapBox}>
+            <CourtsMap courts={filtered} height={280} />
+          </View>
+        ) : null}
 
         <TextInput
           value={query}
@@ -89,7 +126,7 @@ export function CourtsScreen() {
         </View>
       </View>
     ),
-    [district, districts, query],
+    [district, districts, filtered, query, viewMode],
   );
 
   return (
@@ -152,6 +189,35 @@ const styles = StyleSheet.create({
     color: colors.ink,
     fontFamily: fonts.body,
     marginBottom: spacing.sm,
+  },
+  modeRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: spacing.sm,
+  },
+  modeChip: {
+    flex: 1,
+    borderRadius: radii.sm,
+    borderWidth: 1,
+    borderColor: colors.line,
+    backgroundColor: colors.surface,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  modeChipOn: {
+    backgroundColor: colors.courtDeep,
+    borderColor: colors.courtDeep,
+  },
+  modeText: {
+    fontFamily: fonts.bodyMedium,
+    color: colors.muted,
+    fontSize: 13,
+  },
+  modeTextOn: {
+    color: colors.white,
+  },
+  mapBox: {
+    marginBottom: spacing.md,
   },
   filters: {
     flexDirection: 'row',

@@ -35,8 +35,11 @@ insert into public.courts (
   close_hour
 )
 values
-  ((select id from f where name = 'Bostanlı Tenis Tesisleri'), 'Bostanlı Kort 1', 'hard', true, 60, 'Deniz kenarı açık kort', 'active', 8, 22),
-  ((select id from f where name = 'Bostanlı Tenis Tesisleri'), 'Bostanlı Kort 2', 'hard', true, 60, 'Deniz kenarı açık kort', 'active', 8, 22),
+  ((select id from f where name = 'Bostanlı Tenis Tesisleri'), 'Bostanlı Kort 1', 'hard', true, 60, 'Atakent açık kort', 'active', 8, 22),
+  ((select id from f where name = 'Bostanlı Tenis Tesisleri'), 'Bostanlı Kort 2', 'hard', true, 60, 'Atakent açık kort', 'active', 8, 22),
+  ((select id from f where name = 'Bostanlı Tenis Tesisleri'), 'Bostanlı Kort 3', 'hard', true, 60, 'Atakent açık kort', 'active', 8, 22),
+  ((select id from f where name = 'Bostanlı Tenis Tesisleri'), 'Bostanlı Kort 4', 'hard', true, 60, 'Atakent açık kort', 'active', 8, 22),
+  ((select id from f where name = 'Bostanlı Tenis Tesisleri'), 'Bostanlı Kort 5', 'hard', true, 60, 'Atakent açık kort', 'active', 8, 22),
   ((select id from f where name = 'Buca Tenis Tesisleri'), 'Buca Kort 1', 'hard', true, 60, 'Belediye spor tesisi kortu', 'active', 8, 21),
   ((select id from f where name = 'Aşık Veysel Rekreasyon Alanı'), 'Aşık Veysel Kort 1', 'hard', true, 60, 'Rekreasyon alanı kortu', 'active', 8, 22),
   ((select id from f where name = 'Aşık Veysel Rekreasyon Alanı'), 'Aşık Veysel Kort 2', 'hard', true, 60, 'Rekreasyon alanı kortu', 'active', 8, 22)
