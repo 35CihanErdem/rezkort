@@ -17,6 +17,7 @@ import { usePullToRefresh } from '../hooks/usePullToRefresh';
 import { useBooking } from '../store/BookingContext';
 import { colors, fonts, radii, spacing } from '../theme';
 import { RootStackParamList } from '../types';
+import { getAppVersionLabel } from '../utils/appVersion';
 
 export function CourtsScreen() {
   const { courts, refreshAll } = useBooking();
@@ -48,10 +49,11 @@ export function CourtsScreen() {
   return (
     <Screen>
       <View style={[styles.screen, { paddingTop: spacing.md }]}>
-        <Text style={styles.brand}>RezKort</Text>
+        <Text style={styles.brand}>REZCOURT</Text>
         <Text style={styles.subtitle}>
           Boş saati gör, tek dokunuşla rezerve et.
         </Text>
+        <Text style={styles.version}>{getAppVersionLabel()}</Text>
 
         <View style={styles.modeRow}>
           <Pressable
@@ -172,11 +174,17 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     marginTop: 2,
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
     fontFamily: fonts.body,
     color: colors.muted,
     fontSize: 15,
     lineHeight: 22,
+  },
+  version: {
+    marginBottom: spacing.md,
+    fontFamily: fonts.body,
+    color: colors.muted,
+    fontSize: 12,
   },
   search: {
     backgroundColor: colors.surface,

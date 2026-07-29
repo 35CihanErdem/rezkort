@@ -16,6 +16,7 @@ import { LoadingOverlay } from '../../components/LoadingOverlay';
 import { useAuth } from '../../context/AuthContext';
 import { colors, spacing } from '../../theme';
 import { AuthStackParamList } from '../../types';
+import { getAppVersionLabel } from '../../utils/appVersion';
 import { authStyles } from './authStyles';
 
 export function LoginScreen() {
@@ -52,7 +53,7 @@ export function LoginScreen() {
           ]}
           keyboardShouldPersistTaps="handled"
         >
-          <Text style={authStyles.brand}>RezKort</Text>
+          <Text style={authStyles.brand}>REZCOURT</Text>
           <Text style={authStyles.heroTag}>
             İzmir tenis kortlarında yerini ayırt
           </Text>
@@ -110,6 +111,17 @@ export function LoginScreen() {
                 <Text style={authStyles.link}>Kayıt ol</Text>
               </Pressable>
             </View>
+
+            <Text
+              style={{
+                marginTop: spacing.lg,
+                textAlign: 'center',
+                color: colors.muted,
+                fontSize: 12,
+              }}
+            >
+              {getAppVersionLabel()}
+            </Text>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

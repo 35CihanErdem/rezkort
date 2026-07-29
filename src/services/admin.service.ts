@@ -318,7 +318,7 @@ export async function updateUserRole(
 
   if (error) {
     if (error.message.toLowerCase().includes('row-level security')) {
-      return { ok: false, reason: 'Yetkin yok (super_admin gerekir).' };
+      return { ok: false, reason: 'Yetkin yok (admin / super_admin gerekir).' };
     }
     return { ok: false, reason: error.message };
   }

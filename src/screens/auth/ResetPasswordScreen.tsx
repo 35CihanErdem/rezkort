@@ -65,7 +65,7 @@ export function ResetPasswordScreen() {
           ]}
           keyboardShouldPersistTaps="handled"
         >
-          <Text style={authStyles.brand}>RezKort</Text>
+          <Text style={authStyles.brand}>REZCOURT</Text>
           <Text style={authStyles.heroTag}>Yeni şifre</Text>
 
           <View style={authStyles.panel}>

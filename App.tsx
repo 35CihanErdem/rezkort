@@ -80,7 +80,7 @@ export default function App() {
   if (!bebasLoaded || !dmLoaded) {
     return (
       <View style={styles.boot}>
-        <TennisLoader label="RezKort açılıyor..." size="lg" />
+        <TennisLoader label="REZCOURT açılıyor..." size="lg" />
       </View>
     );
   }

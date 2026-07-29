@@ -1,4 +1,4 @@
-# RezKort
+# REZCOURT
 
 İzmir tenis kortları için iOS + Android randevu uygulaması (Expo SDK 54 / React Native + Supabase).
 

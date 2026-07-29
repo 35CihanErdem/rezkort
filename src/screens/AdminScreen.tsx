@@ -64,8 +64,8 @@ export function AdminScreen() {
   const [lateJoinInput, setLateJoinInput] = useState('30');
 
   const allowed = canAccessAdmin(profile);
-  const canManageUsers = profile?.role === 'super_admin';
-  const canEditRules = isGlobalAdmin(profile) || profile?.role === 'super_admin';
+  const canManageUsers = isGlobalAdmin(profile);
+  const canEditRules = isGlobalAdmin(profile);
 
   const filteredFacilities = useMemo(
     () =>

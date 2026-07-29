@@ -59,7 +59,7 @@ export function ForgotPasswordScreen() {
           ]}
           keyboardShouldPersistTaps="handled"
         >
-          <Text style={authStyles.brand}>RezKort</Text>
+          <Text style={authStyles.brand}>REZCOURT</Text>
           <Text style={authStyles.heroTag}>Şifre sıfırlama</Text>
 
           <View style={authStyles.panel}>

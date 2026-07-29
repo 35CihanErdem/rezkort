@@ -4,7 +4,7 @@
 update public.facilities
 set
   address = 'Atakent / Bostanlı, Karşıyaka / İzmir',
-  latitude = 38.46131,
-  longitude = 27.08494,
+  latitude = 38.46167,
+  longitude = 27.08527,
   updated_at = now()
 where name = 'Bostanlı Tenis Tesisleri';

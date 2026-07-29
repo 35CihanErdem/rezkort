@@ -79,7 +79,7 @@ export function RegisterScreen() {
           ]}
           keyboardShouldPersistTaps="handled"
         >
-          <Text style={authStyles.brand}>RezKort</Text>
+          <Text style={authStyles.brand}>REZCOURT</Text>
           <Text style={authStyles.heroTag}>Hesap oluştur, kortunu kilitle</Text>
 
           <View style={authStyles.panel}>

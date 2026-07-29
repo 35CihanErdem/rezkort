@@ -16,6 +16,7 @@ import { usePullToRefresh } from '../hooks/usePullToRefresh';
 import { colors, fonts, radii, spacing } from '../theme';
 import { formatPhoneDisplay } from '../utils/phone';
 import { roleLabel } from '../utils/roles';
+import { getAppVersionLabel } from '../utils/appVersion';
 
 export function AccountScreen() {
   const {
@@ -292,6 +293,8 @@ export function AccountScreen() {
         >
           <Text style={styles.logoutText}>Çıkış yap</Text>
         </Pressable>
+
+        <Text style={styles.version}>{getAppVersionLabel()}</Text>
       </ScrollView>
     </Screen>
   );
@@ -410,5 +413,13 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodyBold,
     color: colors.clay,
     fontSize: 16,
+  },
+  version: {
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
+    fontFamily: fonts.body,
+    color: colors.muted,
+    fontSize: 12,
   },
 });

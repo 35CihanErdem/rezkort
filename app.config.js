@@ -2,9 +2,9 @@ require('dotenv').config();
 
 /** @type {import('expo/config').ExpoConfig} */
 module.exports = {
-  name: 'RezKort',
+  name: 'REZCOURT',
   slug: 'rezkort',
-  version: '1.0.1',
+  version: '1.0.2',
   orientation: 'portrait',
   icon: './assets/icon.png',
   scheme: 'rezkort',
@@ -24,7 +24,7 @@ module.exports = {
   },
   android: {
     package: 'com.rezkort.app',
-    versionCode: 6,
+    versionCode: 7,
     edgeToEdgeEnabled: true,
     adaptiveIcon: {
       backgroundColor: '#145C39',
