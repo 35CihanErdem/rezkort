@@ -1,4 +1,4 @@
-import { Alert, Linking, Platform } from 'react-native';
+import { Linking, Platform } from 'react-native';
 
 export type MapPoint = {
   latitude: number;
@@ -18,81 +18,21 @@ export function hasCoordinates(
   );
 }
 
-async function openUrl(url: string): Promise<boolean> {
-  try {
-    const can = await Linking.canOpenURL(url);
-    if (!can) return false;
-    await Linking.openURL(url);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-/** Harita uygulaması seçtirip konumu açar */
+/** Konumu sistem harita intent’iyle açar (Android uygulama seçicisini OS gösterir). */
 export function promptOpenInMaps(point: MapPoint): void {
   const { latitude, longitude, label } = point;
   const q = encodeURIComponent(label);
-  const googleWeb = `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
-  const googleApp = Platform.select({
-    ios: `comgooglemaps://?q=${latitude},${longitude}&center=${latitude},${longitude}`,
-    android: `geo:${latitude},${longitude}?q=${latitude},${longitude}(${q})`,
-    default: googleWeb,
-  })!;
-  const appleMaps = `http://maps.apple.com/?ll=${latitude},${longitude}&q=${q}`;
-  const yandex = `yandexmaps://maps.yandex.ru/?pt=${longitude},${latitude}&z=16&l=map`;
 
-  const buttons: {
-    text: string;
-    onPress?: () => void;
-    style?: 'cancel' | 'destructive' | 'default';
-  }[] = [];
+  const url =
+    Platform.OS === 'android'
+      ? `geo:${latitude},${longitude}?q=${latitude},${longitude}(${q})`
+      : Platform.OS === 'ios'
+        ? `http://maps.apple.com/?ll=${latitude},${longitude}&q=${q}`
+        : `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
 
-  if (Platform.OS === 'ios') {
-    buttons.push({
-      text: 'Apple Haritalar',
-      onPress: () => {
-        void openUrl(appleMaps);
-      },
-    });
-  }
-
-  buttons.push({
-    text: 'Google Maps',
-    onPress: () => {
-      void (async () => {
-        const ok = await openUrl(googleApp);
-        if (!ok) await openUrl(googleWeb);
-      })();
-    },
+  void Linking.openURL(url).catch(() => {
+    void Linking.openURL(
+      `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`,
+    );
   });
-
-  buttons.push({
-    text: 'Yandex Maps',
-    onPress: () => {
-      void (async () => {
-        const ok = await openUrl(yandex);
-        if (!ok) {
-          await openUrl(
-            `https://yandex.com.tr/maps/?ll=${longitude},${latitude}&z=16&pt=${longitude},${latitude}`,
-          );
-        }
-      })();
-    },
-  });
-
-  buttons.push({
-    text: 'Tarayıcıda aç',
-    onPress: () => {
-      void openUrl(googleWeb);
-    },
-  });
-
-  buttons.push({ text: 'Vazgeç', style: 'cancel' });
-
-  Alert.alert(
-    'Haritada aç',
-    `${label}\nNerede açmak istersin?`,
-    buttons,
-  );
 }

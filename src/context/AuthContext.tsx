@@ -12,6 +12,7 @@ import * as authService from '../services/auth.service';
 import * as profileService from '../services/profile.service';
 import type { AuthActionResult, SignInInput, SignUpInput } from '../types/auth';
 import { displayName, type Profile } from '../types/profile';
+import { logAppError, withTimeout } from '../utils/errorLog';
 
 type AuthContextValue = {
   user: User | null;
@@ -104,6 +105,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (e) {
       console.warn('refreshProfile:', e);
+      logAppError({
+        source: 'profile',
+        message: 'refreshProfile failed',
+        error: e,
+      });
     }
   }, [user?.email]);
 
@@ -145,6 +151,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setProfile(nextProfile);
     } catch (e) {
       console.warn('applySession profile:', e);
+      logAppError({
+        source: 'auth',
+        message: 'applySession profile failed',
+        error: e,
+        context: { userId: next.user.id },
+      });
       setProfile(null);
     }
   }, []);
@@ -154,14 +166,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     async function bootstrap() {
       try {
-        const initialUrl = await Linking.getInitialURL();
-        if (initialUrl) {
-          await createSessionFromUrl(initialUrl);
-        }
+        await withTimeout(
+          (async () => {
+            const initialUrl = await Linking.getInitialURL();
+            if (initialUrl) {
+              await createSessionFromUrl(initialUrl);
+            }
 
-        const { data } = await authService.getSession();
-        if (!alive) return;
-        await applySession(data.session);
+            const { data } = await authService.getSession();
+            if (!alive) return;
+            await applySession(data.session);
+          })(),
+          20_000,
+          'AUTH_BOOT_TIMEOUT',
+        );
+      } catch (e) {
+        logAppError({
+          source: 'auth',
+          message:
+            e instanceof Error && e.message === 'AUTH_BOOT_TIMEOUT'
+              ? 'Auth bootstrap timeout'
+              : 'Auth bootstrap failed',
+          error: e,
+        });
       } finally {
         if (alive) setLoading(false);
       }

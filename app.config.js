@@ -24,13 +24,18 @@ module.exports = {
   },
   android: {
     package: 'com.rezkort.app',
-    versionCode: 3,
+    versionCode: 6,
     edgeToEdgeEnabled: true,
     adaptiveIcon: {
       backgroundColor: '#145C39',
       foregroundImage: './assets/android-icon-foreground.png',
     },
     predictiveBackGestureEnabled: false,
+    config: {
+      googleMaps: {
+        apiKey: process.env.GOOGLE_MAPS_API_KEY ?? '',
+      },
+    },
     intentFilters: [
       {
         action: 'VIEW',
@@ -53,5 +58,6 @@ module.exports = {
     },
     supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL ?? '',
     supabaseKey: process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? '',
+    useNativeMaps: Boolean(process.env.GOOGLE_MAPS_API_KEY),
   },
 };

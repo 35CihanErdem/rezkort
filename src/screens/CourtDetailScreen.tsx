@@ -19,6 +19,7 @@ import { RootStackParamList } from '../types';
 import { isSlotJoinable } from '../utils/booking';
 import { formatDateLabel, formatSlot, nextDays } from '../utils/date';
 import { hasCoordinates, promptOpenInMaps } from '../utils/maps';
+import { logAppError } from '../utils/errorLog';
 
 export function CourtDetailScreen() {
   const route = useRoute<RouteProp<RootStackParamList, 'CourtDetail'>>();
@@ -51,6 +52,16 @@ export function CourtDetailScreen() {
     const id = setInterval(() => setNow(new Date()), 30_000);
     return () => clearInterval(id);
   }, []);
+
+  const myBookingOnThisCourt = useMemo(() => {
+    if (!court || !profile) return undefined;
+    const mine = getActiveBookingForPhone(profile.phone);
+    return mine?.courtId === court.id ? mine : undefined;
+  }, [court, profile, getActiveBookingForPhone]);
+
+  useEffect(() => {
+    if (myBookingOnThisCourt) setDate(myBookingOnThisCourt.date);
+  }, [myBookingOnThisCourt?.id]);
 
   if (!court) {
     return (
@@ -89,26 +100,44 @@ export function CourtDetailScreen() {
     }
 
     setSubmitting(true);
-    const result = await bookSlot({
-      courtId: selectedCourt.id,
-      date,
-      hour: selectedHour,
-      userId: currentUser.id,
-      phone: currentUser.phone,
-      playerName,
-    });
-    setSubmitting(false);
+    try {
+      const result = await bookSlot({
+        courtId: selectedCourt.id,
+        date,
+        hour: selectedHour,
+        userId: currentUser.id,
+        phone: currentUser.phone,
+        playerName,
+      });
 
-    if (!result.ok) {
-      Alert.alert('Rezervasyon yapılamadı', result.reason);
-      return;
+      if (!result.ok) {
+        Alert.alert('Rezervasyon yapılamadı', result.reason);
+        return;
+      }
+
+      Alert.alert(
+        'Rezervasyon alındı',
+        `${formatDateLabel(date)} · ${formatSlot(selectedHour)}`,
+      );
+      setSelectedHour(null);
+    } catch (error) {
+      logAppError({
+        source: 'booking',
+        message: 'Rezervasyon beklenmeyen hata',
+        error,
+        context: {
+          courtId: selectedCourt.id,
+          date,
+          hour: selectedHour,
+        },
+      });
+      Alert.alert(
+        'Rezervasyon yapılamadı',
+        'Beklenmeyen bir hata oluştu. Tekrar dene.',
+      );
+    } finally {
+      setSubmitting(false);
     }
-
-    Alert.alert(
-      'Rezervasyon alındı',
-      `${formatDateLabel(date)} · ${formatSlot(selectedHour)}`,
-    );
-    setSelectedHour(null);
   }
 
   function onCancelActive() {
@@ -123,13 +152,18 @@ export function CourtDetailScreen() {
           style: 'destructive',
           onPress: async () => {
             setCancelling(true);
-            const result = await cancelBooking(activeBooking.id);
-            setCancelling(false);
-            if (!result.ok) {
-              Alert.alert('İptal edilemedi', result.reason);
-              return;
+            try {
+              const result = await cancelBooking(activeBooking.id);
+              if (!result.ok) {
+                Alert.alert('İptal edilemedi', result.reason);
+                return;
+              }
+              Alert.alert('İptal edildi', 'Rezervasyonun iptal edildi.');
+            } catch {
+              Alert.alert('İptal edilemedi', 'Beklenmeyen bir hata oluştu.');
+            } finally {
+              setCancelling(false);
             }
-            Alert.alert('İptal edildi', 'Rezervasyonun iptal edildi.');
           },
         },
       ],
@@ -142,7 +176,7 @@ export function CourtDetailScreen() {
     <Screen edges={['bottom', 'left', 'right']}>
       <LoadingOverlay
         visible={busy}
-        label={cancelling ? 'İptal ediliyor...' : 'Rezerve ediliyor...'}
+        label={cancelling ? 'İptal ediliyor...' : 'Rezervasyon kaydediliyor...'}
       />
       <ScrollView
         style={styles.screen}
@@ -169,7 +203,7 @@ export function CourtDetailScreen() {
             }
             style={styles.directionsBtn}
           >
-            <Text style={styles.directionsText}>🗺 Yol tarifi / Haritada aç</Text>
+            <Text style={styles.directionsText}>🗺 Yol tarifi</Text>
           </Pressable>
         ) : null}
 
@@ -221,7 +255,7 @@ export function CourtDetailScreen() {
 
         <Text style={styles.section}>Saatler</Text>
         <Text style={styles.legend}>
-          Yeşil boş · Turuncu dolu · Gri süre doldu · Mavi seçili
+          Yeşil boş · Turuncu dolu (isim) · Gri süre doldu · Mavi seçili
           {'\n'}
           Geç giriş toleransı: {joinMinutes} dk (bitiş uzamaz)
         </Text>
@@ -273,11 +307,13 @@ export function CourtDetailScreen() {
                     mine && styles.slotHourMine,
                     selected && styles.slotHourSelected,
                   ]}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
                 >
                   {mine
                     ? 'Senin'
                     : taken
-                      ? 'Dolu'
+                      ? booking?.playerName || 'Dolu'
                       : expired
                         ? 'Süre doldu'
                         : 'Boş'}

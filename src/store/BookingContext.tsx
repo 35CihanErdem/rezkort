@@ -11,16 +11,20 @@ import { supabase } from '../lib/supabase';
 import { Booking, Court } from '../types';
 import { isBookingActive } from '../utils/booking';
 import { toDateKey } from '../utils/date';
+import { logAppError, withTimeout } from '../utils/errorLog';
 
 const DEFAULT_LATE_JOIN_MINUTES = 30;
+const BOOT_TIMEOUT_MS = 25_000;
 
 type BookingContextValue = {
   ready: boolean;
+  bootError: string | null;
   courts: Court[];
   bookings: Booking[];
   refreshCourts: () => Promise<void>;
   /** Kortlar + rezervasyonlar + kurallar */
   refreshAll: () => Promise<void>;
+  clearBootError: () => void;
   getLateJoinMinutesForCourt: (courtId: string) => number;
   addCourt: (input: {
     name: string;
@@ -53,6 +57,7 @@ const BookingContext = createContext<BookingContextValue | null>(null);
 export function BookingProvider({ children }: { children: React.ReactNode }) {
   const { profile } = useAuth();
   const [ready, setReady] = useState(false);
+  const [bootError, setBootError] = useState<string | null>(null);
   const [courts, setCourts] = useState<Court[]>([]);
   const [slotReservations, setSlotReservations] = useState<Booking[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -106,6 +111,41 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  /** Occupancy RPC — telefon yok; isim/username ile dolu slot */
+  const mapOccupiedSlot = useCallback(
+    (row: {
+      id: string;
+      court_id: string;
+      date: string;
+      start_hour: number;
+      end_hour: number;
+      status: Booking['status'];
+      user_id: string;
+      player_name?: string | null;
+      username?: string | null;
+    }): Booking => ({
+      id: row.id,
+      courtId: row.court_id,
+      date: row.date,
+      startHour: row.start_hour,
+      endHour: row.end_hour,
+      status: row.status,
+      reservationSource: 'mobile',
+      checkedIn: false,
+      userId: row.user_id,
+      phone: '',
+      playerName:
+        (row.player_name && row.player_name.trim()) ||
+        (row.username ? `@${row.username}` : 'Oyuncu'),
+      notes: null,
+      cancelledAt: null,
+      completedAt: null,
+      createdAt: '',
+      updatedAt: '',
+    }),
+    [],
+  );
+
   const loadCoreData = useCallback(async () => {
     const [
       { data: courtRows, error: courtError },
@@ -119,14 +159,10 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
         )
         .eq('status', 'active')
         .order('name', { ascending: true }),
-      supabase
-        .from('reservations')
-        .select(
-          'id,court_id,user_id,phone,date,start_hour,end_hour,status,reservation_source,checked_in,notes,cancelled_at,completed_at,created_at,updated_at,profiles(first_name,last_name)',
-        )
-        .in('status', ['active', 'cancelled_late'])
-        .gte('date', toDateKey(new Date()))
-        .order('date', { ascending: true }),
+      // RLS own-only SELECT; facility-wide doluluk için security definer RPC
+      supabase.rpc('get_occupied_slots', {
+        p_from_date: toDateKey(new Date()),
+      }),
       supabase
         .from('reservation_rules')
         .select('municipality_id,late_join_minutes'),
@@ -135,8 +171,19 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
     if (courtError) throw courtError;
     setCourts((courtRows ?? []).map(mapCourt));
 
-    if (slotError) throw slotError;
-    setSlotReservations((slotRows ?? []).map(mapBooking));
+    // Occupancy RPC yoksa / hata verirse boot veya rezervasyon akışını kilitleme
+    if (slotError) {
+      logAppError({
+        source: 'booking',
+        message: slotError.message,
+        code: slotError.code,
+        error: slotError,
+        context: { step: 'get_occupied_slots' },
+      });
+      setSlotReservations([]);
+    } else {
+      setSlotReservations((slotRows ?? []).map(mapOccupiedSlot));
+    }
 
     if (!ruleError && ruleRows) {
       const next: Record<string, number> = {};
@@ -144,11 +191,12 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
         municipality_id: string;
         late_join_minutes: number | null;
       }[]) {
-        next[row.municipality_id] = row.late_join_minutes ?? DEFAULT_LATE_JOIN_MINUTES;
+        next[row.municipality_id] =
+          row.late_join_minutes ?? DEFAULT_LATE_JOIN_MINUTES;
       }
       setJoinRulesByMunicipality(next);
     }
-  }, [mapBooking, mapCourt]);
+  }, [mapCourt, mapOccupiedSlot]);
 
   const loadUserBookings = useCallback(async () => {
     if (!profile) {
@@ -171,9 +219,30 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let alive = true;
     (async () => {
+      setBootError(null);
       try {
-        await loadCoreData();
-        await loadUserBookings();
+        await withTimeout(
+          (async () => {
+            await loadCoreData();
+            await loadUserBookings();
+          })(),
+          BOOT_TIMEOUT_MS,
+          'BOOT_TIMEOUT',
+        );
+      } catch (error) {
+        const message =
+          error instanceof Error && error.message === 'BOOT_TIMEOUT'
+            ? 'Kortlar zaman aşımına uğradı. Bağlantını kontrol edip tekrar dene.'
+            : error instanceof Error
+              ? error.message
+              : 'Kortlar yüklenemedi.';
+        setBootError(message);
+        logAppError({
+          source: 'boot',
+          message,
+          error,
+          context: { step: 'loadCoreData' },
+        });
       } finally {
         if (alive) setReady(true);
       }
@@ -183,17 +252,30 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
     };
   }, [loadCoreData, loadUserBookings]);
 
+  const clearBootError = useCallback(() => setBootError(null), []);
+
   const getBookingForSlot = useCallback(
-    (courtId: string, date: string, hour: number) =>
-      slotReservations.find(
-        (b) => b.courtId === courtId && b.date === date && b.startHour === hour,
-      ),
-    [slotReservations],
+    (courtId: string, date: string, hour: number) => {
+      const match = (b: Booking) =>
+        b.courtId === courtId &&
+        b.date === date &&
+        b.startHour === hour &&
+        (b.status === 'active' || b.status === 'cancelled_late');
+
+      // Occupancy RPC + kendi rezervasyonlarım (RPC yoksa / gecikirse bile "Senin" görünsün)
+      return slotReservations.find(match) ?? bookings.find(match);
+    },
+    [bookings, slotReservations],
   );
 
   const getActiveBookingForPhone = useCallback(
-    (phone: string) => bookings.find((b) => b.phone === phone && isBookingActive(b)),
-    [bookings],
+    (phone: string) =>
+      bookings.find(
+        (b) =>
+          isBookingActive(b) &&
+          (b.userId === profile?.id || (phone && b.phone === phone)),
+      ),
+    [bookings, profile?.id],
   );
 
   const addCourt = useCallback(
@@ -267,13 +349,34 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
             'Geç giriş toleransı doldu. Bu saate artık rezervasyon alınamaz.',
           OUTSIDE_WORKING_HOURS: 'Kort çalışma saatleri dışında.',
         };
+        const reason = messageMap[code] ?? 'Rezervasyon oluşturulamadı.';
+        logAppError({
+          source: 'booking',
+          message: reason,
+          code,
+          error,
+          context: {
+            courtId: input.courtId,
+            date: input.date,
+            hour: input.hour,
+          },
+        });
         return {
           ok: false as const,
-          reason: messageMap[code] ?? 'Rezervasyon oluşturulamadı.',
+          reason,
         };
       }
 
-      await Promise.all([loadCoreData(), loadUserBookings()]);
+      try {
+        await Promise.all([loadCoreData(), loadUserBookings()]);
+      } catch (refreshError) {
+        logAppError({
+          source: 'booking_refresh',
+          message: 'Rezervasyon sonrası yenileme başarısız',
+          error: refreshError,
+          context: { courtId: input.courtId, date: input.date },
+        });
+      }
       return { ok: true as const };
     },
     [loadCoreData, loadUserBookings],
@@ -292,19 +395,57 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
           RESERVATION_NOT_FOUND_OR_NOT_ACTIVE:
             'Rezervasyon bulunamadı veya zaten iptal.',
         };
+        const reason = messageMap[code] ?? 'İptal edilemedi.';
+        logAppError({
+          source: 'cancel',
+          message: reason,
+          code,
+          error,
+          context: { bookingId },
+        });
         return {
           ok: false as const,
-          reason: messageMap[code] ?? 'İptal edilemedi.',
+          reason,
         };
       }
-      await Promise.all([loadCoreData(), loadUserBookings()]);
+      try {
+        await Promise.all([loadCoreData(), loadUserBookings()]);
+      } catch (refreshError) {
+        logAppError({
+          source: 'booking_refresh',
+          message: 'İptal sonrası yenileme başarısız',
+          error: refreshError,
+          context: { bookingId },
+        });
+      }
       return { ok: true as const };
     },
     [loadCoreData, loadUserBookings],
   );
 
   const refreshAll = useCallback(async () => {
-    await Promise.all([loadCoreData(), loadUserBookings()]);
+    try {
+      await withTimeout(
+        Promise.all([loadCoreData(), loadUserBookings()]),
+        BOOT_TIMEOUT_MS,
+        'BOOT_TIMEOUT',
+      );
+      setBootError(null);
+    } catch (error) {
+      const message =
+        error instanceof Error && error.message === 'BOOT_TIMEOUT'
+          ? 'Kortlar zaman aşımına uğradı. Bağlantını kontrol edip tekrar dene.'
+          : error instanceof Error
+            ? error.message
+            : 'Yenileme başarısız.';
+      setBootError(message);
+      logAppError({
+        source: 'booking_refresh',
+        message,
+        error,
+      });
+      throw error;
+    }
   }, [loadCoreData, loadUserBookings]);
 
   const getLateJoinMinutesForCourt = useCallback(
@@ -322,10 +463,12 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo(
     () => ({
       ready,
+      bootError,
       courts,
       bookings,
       refreshCourts: loadCoreData,
       refreshAll,
+      clearBootError,
       getLateJoinMinutesForCourt,
       addCourt,
       bookSlot,
@@ -335,10 +478,12 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
     }),
     [
       ready,
+      bootError,
       courts,
       bookings,
       loadCoreData,
       refreshAll,
+      clearBootError,
       getLateJoinMinutesForCourt,
       addCourt,
       bookSlot,

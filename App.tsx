@@ -9,22 +9,54 @@ import {
   useFonts as useDmSans,
 } from '@expo-google-fonts/dm-sans';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { TennisLoader } from './src/components/TennisLoader';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { BookingProvider, useBooking } from './src/store/BookingContext';
-import { colors } from './src/theme';
+import { colors, fonts, radii, spacing } from './src/theme';
 
 function AppReady() {
   const { loading: authLoading } = useAuth();
-  const { ready: bookingReady } = useBooking();
+  const { ready: bookingReady, bootError, refreshAll } = useBooking();
+  const [retrying, setRetrying] = useState(false);
 
-  if (authLoading || !bookingReady) {
+  if (authLoading || (!bookingReady && !bootError)) {
     return (
       <View style={styles.boot}>
-        <TennisLoader label="Kort hazırlanıyor..." size="lg" />
+        <TennisLoader label="Kortlar yükleniyor..." size="lg" />
+      </View>
+    );
+  }
+
+  if (bootError) {
+    return (
+      <View style={styles.boot}>
+        <Text style={styles.errorTitle}>Bir şeyler ters gitti</Text>
+        <Text style={styles.errorBody}>{bootError}</Text>
+        <Pressable
+          disabled={retrying}
+          onPress={async () => {
+            setRetrying(true);
+            try {
+              await refreshAll();
+            } catch {
+              // bootError refreshAll içinde set edilir
+            } finally {
+              setRetrying(false);
+            }
+          }}
+          style={({ pressed }) => [
+            styles.retryBtn,
+            (pressed || retrying) && { opacity: 0.85 },
+          ]}
+        >
+          <Text style={styles.retryText}>
+            {retrying ? 'Tekrar deneniyor...' : 'Tekrar dene'}
+          </Text>
+        </Pressable>
       </View>
     );
   }
@@ -70,5 +102,32 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.bg,
+    paddingHorizontal: spacing.lg,
+  },
+  errorTitle: {
+    fontFamily: fonts.display,
+    fontSize: 32,
+    color: colors.courtDeep,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
+  },
+  errorBody: {
+    fontFamily: fonts.body,
+    fontSize: 15,
+    color: colors.muted,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: spacing.lg,
+  },
+  retryBtn: {
+    backgroundColor: colors.courtDeep,
+    borderRadius: radii.md,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+  retryText: {
+    fontFamily: fonts.bodyBold,
+    color: colors.white,
+    fontSize: 15,
   },
 });

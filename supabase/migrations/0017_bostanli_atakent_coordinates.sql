@@ -3,7 +3,7 @@
 
 update public.facilities
 set
-  address = 'Atakent Mah., F36M+GX, 35590 Karşıyaka / İzmir',
+  address = 'Atakent / Bostanlı, Karşıyaka / İzmir',
   latitude = 38.46131,
   longitude = 27.08494,
   updated_at = now()

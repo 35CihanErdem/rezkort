@@ -1,6 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   FlatList,
   Pressable,
@@ -45,9 +45,9 @@ export function CourtsScreen() {
     });
   }, [courts, district, query]);
 
-  const header = useCallback(
-    () => (
-      <View>
+  return (
+    <Screen>
+      <View style={[styles.screen, { paddingTop: spacing.md }]}>
         <Text style={styles.brand}>RezKort</Text>
         <Text style={styles.subtitle}>
           Boş saati gör, tek dokunuşla rezerve et.
@@ -83,76 +83,76 @@ export function CourtsScreen() {
         </View>
 
         {viewMode === 'map' ? (
-          <View style={styles.mapBox}>
-            <CourtsMap courts={filtered} height={280} />
+          <View style={styles.mapMode}>
+            <CourtsMap courts={filtered} fill />
           </View>
-        ) : null}
-
-        <TextInput
-          value={query}
-          onChangeText={setQuery}
-          placeholder="Kort veya semt ara..."
-          placeholderTextColor={colors.muted}
-          style={styles.search}
-        />
-
-        <View style={styles.filters}>
-          <Pressable
-            onPress={() => setDistrict(null)}
-            style={[styles.chip, !district && styles.chipActive]}
-          >
-            <Text
-              style={[styles.chipText, !district && styles.chipTextActive]}
-            >
-              Tümü
-            </Text>
-          </Pressable>
-          {districts.map((d) => (
-            <Pressable
-              key={d}
-              onPress={() => setDistrict(d)}
-              style={[styles.chip, district === d && styles.chipActive]}
-            >
-              <Text
-                style={[
-                  styles.chipText,
-                  district === d && styles.chipTextActive,
-                ]}
-              >
-                {d}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-      </View>
-    ),
-    [district, districts, filtered, query, viewMode],
-  );
-
-  return (
-    <Screen>
-      <View style={[styles.screen, { paddingTop: spacing.md }]}>
-        <FlatList
-          data={filtered}
-          keyExtractor={(item) => item.id}
-          ListHeaderComponent={header}
-          refreshControl={<RefreshControl {...refreshControlProps} />}
-          contentContainerStyle={styles.list}
-          ItemSeparatorComponent={() => (
-            <View style={{ height: spacing.sm }} />
-          )}
-          ListEmptyComponent={
-            <Text style={styles.empty}>Bu filtreye uygun kort yok.</Text>
-          }
-          renderItem={({ item }) => (
-            <CourtCard
-              court={item}
-              onPress={() =>
-                navigation.navigate('CourtDetail', { courtId: item.id })
-              }
-            />
-          )}
-        />
+        ) : (
+          <FlatList
+            data={filtered}
+            keyExtractor={(item) => item.id}
+            refreshControl={<RefreshControl {...refreshControlProps} />}
+            contentContainerStyle={styles.list}
+            ItemSeparatorComponent={() => (
+              <View style={{ height: spacing.sm }} />
+            )}
+            ListHeaderComponent={
+              <View>
+                <TextInput
+                  value={query}
+                  onChangeText={setQuery}
+                  placeholder="Kort veya semt ara..."
+                  placeholderTextColor={colors.muted}
+                  style={styles.search}
+                />
+                <View style={styles.filters}>
+                  <Pressable
+                    onPress={() => setDistrict(null)}
+                    style={[styles.chip, !district && styles.chipActive]}
+                  >
+                    <Text
+                      style={[
+                        styles.chipText,
+                        !district && styles.chipTextActive,
+                      ]}
+                    >
+                      Tümü
+                    </Text>
+                  </Pressable>
+                  {districts.map((d) => (
+                    <Pressable
+                      key={d}
+                      onPress={() => setDistrict(d)}
+                      style={[
+                        styles.chip,
+                        district === d && styles.chipActive,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.chipText,
+                          district === d && styles.chipTextActive,
+                        ]}
+                      >
+                        {d}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+            }
+            ListEmptyComponent={
+              <Text style={styles.empty}>Bu filtreye uygun kort yok.</Text>
+            }
+            renderItem={({ item }) => (
+              <CourtCard
+                court={item}
+                onPress={() =>
+                  navigation.navigate('CourtDetail', { courtId: item.id })
+                }
+              />
+            )}
+          />
+        )}
       </View>
     </Screen>
   );
@@ -216,8 +216,10 @@ const styles = StyleSheet.create({
   modeTextOn: {
     color: colors.white,
   },
-  mapBox: {
+  mapMode: {
+    flex: 1,
     marginBottom: spacing.md,
+    minHeight: 280,
   },
   filters: {
     flexDirection: 'row',
