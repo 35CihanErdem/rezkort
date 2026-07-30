@@ -9,7 +9,19 @@ module.exports = {
   icon: './assets/icon.png',
   scheme: 'rezkort',
   userInterfaceStyle: 'light',
-  plugins: ['expo-font'],
+  plugins: [
+    'expo-font',
+    [
+      'expo-notifications',
+      {
+        color: '#145C39',
+        defaultChannel: 'rezcourt-bookings',
+      },
+    ],
+  ],
+  notification: {
+    color: '#145C39',
+  },
   updates: {
     enabled: false,
     checkAutomatically: 'NEVER',
@@ -24,7 +36,7 @@ module.exports = {
   },
   android: {
     package: 'com.rezkort.app',
-    versionCode: 7,
+    versionCode: 8,
     edgeToEdgeEnabled: true,
     adaptiveIcon: {
       backgroundColor: '#145C39',

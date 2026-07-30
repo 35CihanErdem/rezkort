@@ -1,4 +1,4 @@
-export type ProfileRole = 'citizen' | 'staff' | 'admin' | 'super_admin';
+export type ProfileRole = 'citizen';
 
 export type Profile = {
   id: string;
@@ -9,6 +9,7 @@ export type Profile = {
   email: string;
   username: string;
   role: ProfileRole;
+  isSuperAdmin: boolean;
   phoneVerified: boolean;
   emailVerified: boolean;
   isActive: boolean;
@@ -25,6 +26,7 @@ export type ProfileRow = {
   last_name: string;
   username: string | null;
   role: ProfileRole;
+  is_super_admin?: boolean;
   phone_verified: boolean;
   email_verified: boolean;
   is_active: boolean;
@@ -38,7 +40,6 @@ export type UpdateProfileInput = {
   lastName?: string;
   phone?: string;
   username?: string;
-  /** İleride SMS doğrulaması için: true olunca phone_verified güncellenir */
   phoneVerified?: boolean;
 };
 
@@ -50,7 +51,8 @@ export function mapProfileRow(row: ProfileRow): Profile {
     phone: row.phone,
     email: row.email,
     username: row.username ?? '',
-    role: row.role,
+    role: 'citizen',
+    isSuperAdmin: Boolean(row.is_super_admin),
     phoneVerified: row.phone_verified,
     emailVerified: row.email_verified,
     isActive: row.is_active,

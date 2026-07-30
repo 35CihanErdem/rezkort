@@ -15,7 +15,7 @@ import {
 } from '../utils/phone';
 
 const PROFILE_SELECT =
-  'id,phone,email,first_name,last_name,username,role,phone_verified,email_verified,is_active,last_login_at,created_at,updated_at';
+  'id,phone,email,first_name,last_name,username,role,is_super_admin,phone_verified,email_verified,is_active,last_login_at,created_at,updated_at';
 
 export async function fetchProfile(userId: string): Promise<Profile | null> {
   const { data, error } = await supabase

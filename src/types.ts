@@ -50,7 +50,6 @@ export type MainTabParamList = {
   Courts: undefined;
   MyBookings: undefined;
   Account: undefined;
-  Admin: undefined;
 };
 
 /** @deprecated Profile tipi src/types/profile.ts içinde */

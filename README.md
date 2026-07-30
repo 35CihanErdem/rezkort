@@ -1,18 +1,26 @@
 # REZCOURT
 
-İzmir tenis kortları için iOS + Android randevu uygulaması (Expo SDK 54 / React Native + Supabase).
+İzmir tenis kortları — **mobil vatandaş** (Expo) + **web admin** (Next.js) · ortak Supabase.
 
-## Ne yapıyor?
+## Ne yapıyor? (Mobil)
 
-- **Supabase Auth** ile kayıt (ad, soyad, telefon, e-posta, şifre)
-- E-posta doğrulaması zorunlu (Confirm email)
-- Giriş: e-posta / telefon / kullanıcı adı + şifre
-- Şifremi unuttum (Supabase reset maili)
-- Hesaptan e-posta / telefon güncelleme
-- Kort listesi, rezervasyon, iptal
-- **1 telefon = 1 aktif rezervasyon** (RPC)
+- Kayıt / giriş / profil
+- Kort listesi, rezervasyon, iptal, randevularım
+- Yerel hatırlatma bildirimleri
+- Admin/staff paneli **yok** (web’de)
 
-## Ortam
+## Web Admin
+
+Ayrı uygulama: [`admin/`](admin/README.md)
+
+```bash
+cd admin
+cp .env.example .env.local
+npm install
+npm run dev
+```
+
+## Ortam (mobil)
 
 `.env`:
 
@@ -21,12 +29,17 @@ EXPO_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
 EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_anon_or_publishable_key
 ```
 
-Supabase Dashboard:
+Supabase’de migration’ları sırayla çalıştır; özellikle **`0027_role_model_audit_admin_ops.sql`** (roller + audit + admin RPC). Sonrası **database freeze**.
 
-- Authentication → Providers → Email → **Confirm email: ON**
-- Authentication → URL Configuration → Redirect URLs: `rezkort://**`
+Super admin (yalnızca SQL):
 
-## Çalıştır
+```sql
+update public.profiles
+set is_super_admin = true, role = 'citizen'
+where email = 'senin@email.com';
+```
+
+## Çalıştır (mobil)
 
 ```bash
 npm start
@@ -35,11 +48,7 @@ npm start
 ## Yapı
 
 ```
-src/
-  lib/supabase.ts
-  services/auth.service.ts
-  services/profile.service.ts
-  context/AuthContext.tsx
-  types/auth.ts
-  types/profile.ts
+admin/                 # Next.js belediye paneli
+src/                   # Expo vatandaş uygulaması
+supabase/migrations/   # Ortak şema (freeze: 0027 sonrası)
 ```

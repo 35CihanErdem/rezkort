@@ -9,6 +9,7 @@ import React, {
   useState,
 } from 'react';
 import * as authService from '../services/auth.service';
+import { registerPushToken } from '../services/notifications';
 import * as profileService from '../services/profile.service';
 import type { AuthActionResult, SignInInput, SignUpInput } from '../types/auth';
 import { displayName, type Profile } from '../types/profile';
@@ -219,6 +220,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       authSub.subscription.unsubscribe();
     };
   }, [applySession]);
+
+  useEffect(() => {
+    if (!profile?.id) return;
+    void registerPushToken(profile.id);
+  }, [profile?.id]);
 
   const signIn = useCallback(async (input: SignInInput) => {
     const result = await authService.signIn(input);

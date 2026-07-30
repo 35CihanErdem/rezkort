@@ -8,6 +8,12 @@ import React, {
 } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import {
+  cancelBookingNotifications,
+  notifyBookingConfirmed,
+  scheduleBookingReminder,
+  syncBookingReminders,
+} from '../services/notifications';
 import { Booking, Court } from '../types';
 import { isBookingActive } from '../utils/booking';
 import { toDateKey } from '../utils/date';
@@ -217,6 +223,13 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
   }, [mapBooking, profile]);
 
   useEffect(() => {
+    if (!profile) return;
+    void syncBookingReminders(bookings, courts).catch((e) => {
+      console.warn('syncBookingReminders:', e);
+    });
+  }, [profile?.id, bookings, courts]);
+
+  useEffect(() => {
     let alive = true;
     (async () => {
       setBootError(null);
@@ -329,7 +342,7 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
         return { ok: false as const, reason: 'Giriş yapman gerekli.' };
       }
 
-      const { error } = await supabase.rpc('book_reservation', {
+      const { data, error } = await supabase.rpc('book_reservation', {
         p_court_id: input.courtId,
         p_date: input.date,
         p_start_hour: input.hour,
@@ -367,6 +380,30 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
         };
       }
 
+      const courtName =
+        courts.find((c) => c.id === input.courtId)?.name ?? 'Kort';
+      const bookingId =
+        data && typeof data === 'object' && 'id' in data
+          ? String((data as { id: string }).id)
+          : null;
+
+      if (bookingId) {
+        void Promise.all([
+          notifyBookingConfirmed({
+            bookingId,
+            courtName,
+            date: input.date,
+            startHour: input.hour,
+          }),
+          scheduleBookingReminder({
+            bookingId,
+            courtName,
+            date: input.date,
+            startHour: input.hour,
+          }),
+        ]).catch((e) => console.warn('booking notifications:', e));
+      }
+
       try {
         await Promise.all([loadCoreData(), loadUserBookings()]);
       } catch (refreshError) {
@@ -379,7 +416,7 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
       }
       return { ok: true as const };
     },
-    [loadCoreData, loadUserBookings],
+    [courts, loadCoreData, loadUserBookings],
   );
 
   const cancelBooking = useCallback(
@@ -408,6 +445,7 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
           reason,
         };
       }
+      void cancelBookingNotifications(bookingId);
       try {
         await Promise.all([loadCoreData(), loadUserBookings()]);
       } catch (refreshError) {
